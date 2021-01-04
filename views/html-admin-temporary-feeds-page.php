@@ -32,8 +32,8 @@
 
 		echo esc_html(
 			sprintf(
-				/* translators: %s: Pronamic Pay version number, i.e. 4.7.0 */
-				__( 'Pronamic Pay v%s', 'pronamic_ideal' ),
+				/* translators: %s: Knit Pay version number, i.e. 4.7.0 */
+				__( 'Knit Pay v%s', 'pronamic_ideal' ),
 				pronamic_pay_plugin()->get_version()
 			)
 		);
@@ -42,7 +42,7 @@
 	</h1>
 
 	<div class="about-text">
-		<?php esc_html_e( 'Thank you for updating! This new version of Pronamic Pay changes how you manage your payment feeds.', 'pronamic_ideal' ); ?>
+		<?php esc_html_e( 'Thank you for updating! This new version of Knit Pay changes how you manage your payment feeds.', 'pronamic_ideal' ); ?>
 	</div>
 
 	<hr/>

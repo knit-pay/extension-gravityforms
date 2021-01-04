@@ -146,6 +146,9 @@ class Extension extends AbstractPluginIntegration {
 		add_filter( 'gform_noconflict_scripts', array( $this, 'no_conflict_scripts' ) );
 		add_filter( 'gform_noconflict_styles', array( $this, 'no_conflict_styles' ) );
 
+		// Add more supported currencies.
+		add_filter( 'gform_currencies', array( $this, 'gform_currencies' ) );
+
 		$this->maybe_display_confirmation();
 	}
 
@@ -207,6 +210,21 @@ class Extension extends AbstractPluginIntegration {
 
 			wp_enqueue_script( 'pronamic-pay-gravityforms' );
 		}
+	}
+
+	public function gform_currencies( $currencies ) {
+		$currencies['INR'] = array(
+			'name'               => __( 'India Rupee', 'knit-pay' ),
+			'symbol_left'        => '₹',
+			'symbol_right'       => '',
+			'symbol_padding'     => '',
+			'thousand_separator' => ',',
+			'decimal_separator'  => '.',
+			'decimals'           => 2,
+			'symbol_old'         => 'Rs.',
+		);
+
+		return $currencies;
 	}
 
 	/**
@@ -1150,25 +1168,25 @@ class Extension extends AbstractPluginIntegration {
 
 		// Replacements.
 		$replacements = array(
-			'{payment_status}'                     => rgar( $entry, 'payment_status' ),
-			'{payment_date}'                       => rgar( $entry, 'payment_date' ),
-			'{transaction_id}'                     => rgar( $entry, 'transaction_id' ),
-			'{payment_amount}'                     => GFCommon::to_money( rgar( $entry, 'payment_amount' ), rgar( $entry, 'currency' ) ),
-			'{pronamic_payment_id}'                => $payment_id,
-			'{pronamic_pay_again_url}'             => $pay_again_url,
-			'{pronamic_payment_bank_transfer_recipient_reference}' => $bank_transfer_recipient_reference,
-			'{pronamic_payment_bank_transfer_recipient_bank_name}' => $bank_transfer_recipient_bank_name,
-			'{pronamic_payment_bank_transfer_recipient_name}' => $bank_transfer_recipient_name,
-			'{pronamic_payment_bank_transfer_recipient_iban}' => $bank_transfer_recipient_iban,
-			'{pronamic_payment_bank_transfer_recipient_bic}' => $bank_transfer_recipient_bic,
-			'{pronamic_payment_bank_transfer_recipient_city}' => $bank_transfer_recipient_city,
-			'{pronamic_payment_bank_transfer_recipient_country}' => $bank_transfer_recipient_country,
-			'{pronamic_payment_bank_transfer_recipient_account_number}' => $bank_transfer_recipient_account_number,
-			'{pronamic_subscription_payment_id}'   => $subscription_payment_id,
-			'{pronamic_subscription_amount}'       => $subscription_amount,
-			'{pronamic_subscription_cancel_url}'   => $subscription_cancel_url,
-			'{pronamic_subscription_renew_url}'    => $subscription_renew_url,
-			'{pronamic_subscription_renewal_date}' => $subscription_renewal_date,
+			'{payment_status}'                    => rgar( $entry, 'payment_status' ),
+			'{payment_date}'                      => rgar( $entry, 'payment_date' ),
+			'{transaction_id}'                    => rgar( $entry, 'transaction_id' ),
+			'{payment_amount}'                    => GFCommon::to_money( rgar( $entry, 'payment_amount' ), rgar( $entry, 'currency' ) ),
+			'{knitpay_payment_id}'                => $payment_id,
+			'{knitpay_pay_again_url}'             => $pay_again_url,
+			'{knitpay_payment_bank_transfer_recipient_reference}' => $bank_transfer_recipient_reference,
+			'{knitpay_payment_bank_transfer_recipient_bank_name}' => $bank_transfer_recipient_bank_name,
+			'{knitpay_payment_bank_transfer_recipient_name}' => $bank_transfer_recipient_name,
+			'{knitpay_payment_bank_transfer_recipient_iban}' => $bank_transfer_recipient_iban,
+			'{knitpay_payment_bank_transfer_recipient_bic}' => $bank_transfer_recipient_bic,
+			'{knitpay_payment_bank_transfer_recipient_city}' => $bank_transfer_recipient_city,
+			'{knitpay_payment_bank_transfer_recipient_country}' => $bank_transfer_recipient_country,
+			'{knitpay_payment_bank_transfer_recipient_account_number}' => $bank_transfer_recipient_account_number,
+			'{knitpay_subscription_payment_id}'   => $subscription_payment_id,
+			'{knitpay_subscription_amount}'       => $subscription_amount,
+			'{knitpay_subscription_cancel_url}'   => $subscription_cancel_url,
+			'{knitpay_subscription_renew_url}'    => $subscription_renew_url,
+			'{knitpay_subscription_renewal_date}' => $subscription_renewal_date,
 		);
 
 		if ( $url_encode ) {

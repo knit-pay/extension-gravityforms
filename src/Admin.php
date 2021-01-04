@@ -168,80 +168,80 @@ class Admin {
 		);
 
 		$merge_tags[] = array(
-			'label' => __( 'Pronamic Payment ID', 'pronamic_ideal' ),
-			'tag'   => '{pronamic_payment_id}',
+			'label' => __( 'Knit Payment ID', 'pronamic_ideal' ),
+			'tag'   => '{knitpay_payment_id}',
 		);
 
 		$merge_tags[] = array(
-			'label' => __( 'Pronamic Pay Again URL', 'pronamic_ideal' ),
-			'tag'   => '{pronamic_pay_again_url}',
+			'label' => __( 'Knit Pay Again URL', 'pronamic_ideal' ),
+			'tag'   => '{knitpay_pay_again_url}',
 		);
 
 		// Bank transfer.
 		$merge_tags[] = array(
-			'label' => __( 'Pronamic bank transfer recipient reference', 'pronamic_ideal' ),
-			'tag'   => '{pronamic_payment_bank_transfer_recipient_reference}',
+			'label' => __( 'Knit Pay bank transfer recipient reference', 'pronamic_ideal' ),
+			'tag'   => '{knitpay_payment_bank_transfer_recipient_reference}',
 		);
 
 		$merge_tags[] = array(
-			'label' => __( 'Pronamic bank transfer recipient bank name', 'pronamic_ideal' ),
-			'tag'   => '{pronamic_payment_bank_transfer_recipient_bank_name}',
+			'label' => __( 'Knit Pay bank transfer recipient bank name', 'pronamic_ideal' ),
+			'tag'   => '{knitpay_payment_bank_transfer_recipient_bank_name}',
 		);
 
 		$merge_tags[] = array(
-			'label' => __( 'Pronamic bank transfer recipient name', 'pronamic_ideal' ),
-			'tag'   => '{pronamic_payment_bank_transfer_recipient_name}',
+			'label' => __( 'Knit Pay bank transfer recipient name', 'pronamic_ideal' ),
+			'tag'   => '{knitpay_payment_bank_transfer_recipient_name}',
 		);
 
 		$merge_tags[] = array(
-			'label' => __( 'Pronamic bank transfer recipient IBAN', 'pronamic_ideal' ),
-			'tag'   => '{pronamic_payment_bank_transfer_recipient_iban}',
+			'label' => __( 'Knit Pay bank transfer recipient IBAN', 'pronamic_ideal' ),
+			'tag'   => '{knitpay_payment_bank_transfer_recipient_iban}',
 		);
 
 		$merge_tags[] = array(
-			'label' => __( 'Pronamic bank transfer recipient BIC', 'pronamic_ideal' ),
-			'tag'   => '{pronamic_payment_bank_transfer_recipient_bic}',
+			'label' => __( 'Knit Pay bank transfer recipient BIC', 'pronamic_ideal' ),
+			'tag'   => '{knitpay_payment_bank_transfer_recipient_bic}',
 		);
 
 		$merge_tags[] = array(
-			'label' => __( 'Pronamic bank transfer recipient city', 'pronamic_ideal' ),
-			'tag'   => '{pronamic_payment_bank_transfer_recipient_city}',
+			'label' => __( 'Knit Pay bank transfer recipient city', 'pronamic_ideal' ),
+			'tag'   => '{knitpay_payment_bank_transfer_recipient_city}',
 		);
 
 		$merge_tags[] = array(
-			'label' => __( 'Pronamic bank transfer recipient country', 'pronamic_ideal' ),
-			'tag'   => '{pronamic_payment_bank_transfer_recipient_country}',
+			'label' => __( 'Knit Pay bank transfer recipient country', 'pronamic_ideal' ),
+			'tag'   => '{knitpay_payment_bank_transfer_recipient_country}',
 		);
 
 		$merge_tags[] = array(
-			'label' => __( 'Pronamic bank transfer recipient account number', 'pronamic_ideal' ),
-			'tag'   => '{pronamic_payment_bank_transfer_recipient_account_number}',
+			'label' => __( 'Knit Pay bank transfer recipient account number', 'pronamic_ideal' ),
+			'tag'   => '{knitpay_payment_bank_transfer_recipient_account_number}',
 		);
 
 		// Subscription.
 		$merge_tags[] = array(
-			'label' => __( 'Pronamic Subscription Payment ID', 'pronamic_ideal' ),
-			'tag'   => '{pronamic_subscription_payment_id}',
+			'label' => __( 'Knit Pay Subscription Payment ID', 'pronamic_ideal' ),
+			'tag'   => '{knitpay_subscription_payment_id}',
 		);
 
 		$merge_tags[] = array(
-			'label' => __( 'Pronamic Subscription Amount', 'pronamic_ideal' ),
-			'tag'   => '{pronamic_subscription_amount}',
+			'label' => __( 'Knit Pay Subscription Amount', 'pronamic_ideal' ),
+			'tag'   => '{knitpay_subscription_amount}',
 		);
 
 		$merge_tags[] = array(
-			'label' => __( 'Pronamic Subscription Cancel URL', 'pronamic_ideal' ),
-			'tag'   => '{pronamic_subscription_cancel_url}',
+			'label' => __( 'Knit Pay Subscription Cancel URL', 'pronamic_ideal' ),
+			'tag'   => '{knitpay_subscription_cancel_url}',
 		);
 
 		$merge_tags[] = array(
-			'label' => __( 'Pronamic Subscription Renew URL', 'pronamic_ideal' ),
-			'tag'   => '{pronamic_subscription_renew_url}',
+			'label' => __( 'Knit Pay Subscription Renew URL', 'pronamic_ideal' ),
+			'tag'   => '{knitpay_subscription_renew_url}',
 		);
 
 		$merge_tags[] = array(
-			'label' => __( 'Pronamic Subscription Renewal Date', 'pronamic_ideal' ),
-			'tag'   => '{pronamic_subscription_renewal_date}',
+			'label' => __( 'Knit Pay Subscription Renewal Date', 'pronamic_ideal' ),
+			'tag'   => '{knitpay_subscription_renewal_date}',
 		);
 
 		return $merge_tags;

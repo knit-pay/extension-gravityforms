@@ -146,9 +146,6 @@ class Extension extends AbstractPluginIntegration {
 		add_filter( 'gform_noconflict_scripts', array( $this, 'no_conflict_scripts' ) );
 		add_filter( 'gform_noconflict_styles', array( $this, 'no_conflict_styles' ) );
 
-		// Add more supported currencies.
-		add_filter( 'gform_currencies', array( $this, 'gform_currencies' ) );
-
 		$this->maybe_display_confirmation();
 	}
 
@@ -210,21 +207,6 @@ class Extension extends AbstractPluginIntegration {
 
 			wp_enqueue_script( 'pronamic-pay-gravityforms' );
 		}
-	}
-
-	public function gform_currencies( $currencies ) {
-		$currencies['INR'] = array(
-			'name'               => __( 'India Rupee', 'knit-pay' ),
-			'symbol_left'        => '₹',
-			'symbol_right'       => '',
-			'symbol_padding'     => '',
-			'thousand_separator' => ',',
-			'decimal_separator'  => '.',
-			'decimals'           => 2,
-			'symbol_old'         => 'Rs.',
-		);
-
-		return $currencies;
 	}
 
 	/**
@@ -1219,6 +1201,17 @@ class Extension extends AbstractPluginIntegration {
 				'decimals'           => 4,
 			);
 		}
+
+		$currencies['INR'] = array(
+			'name'               => __( 'India Rupee', 'knit-pay' ),
+			'symbol_left'        => '₹',
+			'symbol_right'       => '',
+			'symbol_padding'     => '',
+			'thousand_separator' => ',',
+			'decimal_separator'  => '.',
+			'decimals'           => 2,
+			'symbol_old'         => 'Rs.',
+		);
 
 		return $currencies;
 	}

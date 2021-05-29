@@ -3,13 +3,14 @@
  * Admin feed settings.
  *
  * @author    Pronamic <info@pronamic.eu>
- * @copyright 2005-2020 Pronamic
+ * @copyright 2005-2021 Pronamic
  * @license   GPL-3.0-or-later
  * @package   Pronamic\WordPress\Pay\Extensions\GravityForms
  */
 
 use Pronamic\WordPress\Pay\Admin\AdminModule;
 use Pronamic\WordPress\Pay\Extensions\GravityForms\Extension;
+use Pronamic\WordPress\Pay\Extensions\GravityForms\GravityForms;
 use Pronamic\WordPress\Pay\Extensions\GravityForms\Links;
 use Pronamic\WordPress\Pay\Extensions\GravityForms\PayFeed;
 
@@ -925,6 +926,19 @@ $feed->subscriptionFrequencyField = $pay_feed->subscription_frequency_field;
 					<td>
 						<div id="gf_ideal_condition_config">
 							<script type="text/javascript">
+								<?php
+
+								if ( GravityForms::version_compare( '2.5-rc', '>=' ) ) {
+
+									?>
+
+									var form = <?php echo wp_json_encode( gf_apply_filters( array( 'gform_admin_pre_render', $form_id ), GFFormsModel::get_form_meta( $form_id ) ) ); ?>;
+
+									<?php
+								}
+
+								?>
+
 								function GetConditionalLogicFields () {
 									<?php
 
@@ -948,6 +962,23 @@ $feed->subscriptionFrequencyField = $pay_feed->subscription_frequency_field;
 							</script>
 
 							<?php
+
+							$post_id = \filter_input( INPUT_GET, 'fid', FILTER_SANITIZE_STRING );
+
+							if ( method_exists( $this, 'get_settings_renderer' ) ) {
+								if ( false === $this->get_settings_renderer() && class_exists( '\Gravity_Forms\Gravity_Forms\Settings\Settings' ) ) {
+									$this->set_settings_renderer( new \Gravity_Forms\Gravity_Forms\Settings\Settings() );
+								}
+
+								$feed = new PayFeed( $post_id );
+
+								$this->get_settings_renderer()->set_values(
+									array(
+										'feed_condition_conditional_logic'        => $feed->condition_enabled,
+										'feed_condition_conditional_logic_object' => $feed->conditional_logic_object,
+									)
+								);
+							}
 
 							$field = array(
 								'name'  => 'conditionalLogic',

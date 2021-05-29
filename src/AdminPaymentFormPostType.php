@@ -3,7 +3,7 @@
  * Admin payment form post type
  *
  * @author    Pronamic <info@pronamic.eu>
- * @copyright 2005-2020 Pronamic
+ * @copyright 2005-2021 Pronamic
  * @license   GPL-3.0-or-later
  * @package   Pronamic\WordPress\Pay\Extensions\GravityForms
  */
@@ -17,11 +17,11 @@ use WP_Query;
 /**
  * Title: WordPress admin payment form post type
  * Description:
- * Copyright: 2005-2020 Pronamic
+ * Copyright: 2005-2021 Pronamic
  * Company: Pronamic
  *
  * @author  Remco Tolsma
- * @version 2.3.0
+ * @version 2.6.1
  * @since   1.0.0
  */
 class AdminPaymentFormPostType {
@@ -33,7 +33,7 @@ class AdminPaymentFormPostType {
 	const POST_TYPE = 'pronamic_pay_gf';
 
 	/**
-	 * Constructs and intialize admin payment form post type.
+	 * Construct and initialize admin payment form post type.
 	 */
 	public function __construct() {
 		add_filter( 'manage_edit-pronamic_pay_gf_columns', array( $this, 'edit_columns' ) );
@@ -42,9 +42,7 @@ class AdminPaymentFormPostType {
 
 		add_action( 'add_meta_boxes', array( $this, 'add_meta_boxes' ) );
 
-		if ( GravityForms::version_compare( '1.7', '>=' ) ) {
-			add_action( 'gform_after_delete_form', array( $this, 'delete_payment_form' ) );
-		}
+		add_action( 'gform_after_delete_form', array( $this, 'delete_payment_form' ) );
 
 		add_filter( 'wp_insert_post_data', array( $this, 'insert_post_data' ), 99, 2 );
 
@@ -280,6 +278,7 @@ class AdminPaymentFormPostType {
 
 			// Feed conditions.
 			'_gaddon_setting_feed_condition_conditional_logic_object' => 'sanitize_text_field',
+			'_gform_setting_feed_condition_conditional_logic_object' => 'sanitize_text_field',
 		);
 
 		$delay_actions = Extension::get_delay_actions();
@@ -368,7 +367,7 @@ class AdminPaymentFormPostType {
 				\delete_post_meta( $post_id, '_pronamic_pay_gf_subscription_frequency' );
 			}
 
-			if ( '_gaddon_setting_feed_condition_conditional_logic_object' === $meta_key ) {
+			if ( \in_array( $meta_key, array( '_gform_setting_feed_condition_conditional_logic_object', '_gaddon_setting_feed_condition_conditional_logic_object' ), true ) ) {
 				\delete_post_meta( $post_id, '_pronamic_pay_gf_condition_field_id' );
 				\delete_post_meta( $post_id, '_pronamic_pay_gf_condition_operator' );
 				\delete_post_meta( $post_id, '_pronamic_pay_gf_condition_value' );
@@ -376,6 +375,14 @@ class AdminPaymentFormPostType {
 		}
 
 		// Enable conditional logic.
+		if ( \filter_has_var( \INPUT_POST, '_gform_setting_feed_condition_conditional_logic' ) ) {
+			if ( false !== \filter_input( \INPUT_POST, '_gform_setting_feed_condition_conditional_logic', \FILTER_VALIDATE_BOOLEAN ) ) {
+				\update_post_meta( $post_id, '_pronamic_pay_gf_condition_enabled', true );
+			} else {
+				\delete_post_meta( $post_id, '_pronamic_pay_gf_condition_enabled' );
+			}
+		}
+
 		if ( \filter_has_var( \INPUT_POST, '_gaddon_setting_feed_condition_conditional_logic' ) ) {
 			if ( false !== \filter_input( \INPUT_POST, '_gaddon_setting_feed_condition_conditional_logic', \FILTER_VALIDATE_BOOLEAN ) ) {
 				\update_post_meta( $post_id, '_pronamic_pay_gf_condition_enabled', true );

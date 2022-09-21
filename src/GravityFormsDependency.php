@@ -31,10 +31,6 @@ class GravityFormsDependency extends Dependency {
 			return false;
 		}
 
-		if ( ! \defined( 'KNIT_PAY_GRAVITY_FORMS' ) ) {
-			return false;
-		}
-
 		return \version_compare(
 			\GFCommon::$version,
 			'1.7.0',

@@ -3,7 +3,7 @@
  * Gravity Forms
  *
  * @author    Pronamic <info@pronamic.eu>
- * @copyright 2005-2022 Pronamic
+ * @copyright 2005-2023 Pronamic
  * @license   GPL-3.0-or-later
  * @package   Pronamic\WordPress\Pay\Extensions\GravityForms
  */
@@ -18,7 +18,7 @@ use Pronamic\WordPress\Pay\Core\Util as Core_Util;
 /**
  * Title: WordPress pay extension Gravity Forms
  * Description:
- * Copyright: 2005-2022 Pronamic
+ * Copyright: 2005-2023 Pronamic
  * Company: Pronamic
  *
  * @author  Remco Tolsma
@@ -113,26 +113,6 @@ class GravityForms {
 	 */
 	public static function is_active() {
 		return class_exists( 'GFForms' );
-	}
-
-	/**
-	 * Update entry.
-	 *
-	 * @param array $entry Gravity Forms entry.
-	 */
-	public static function update_entry( $entry ) {
-		/*
-		 * GFFormsModel::update_lead() is no longer in use since version 1.8.8! Instead use GFAPI::update_entry().
-		 *
-		 * @link https://github.com/wp-premium/gravityforms/blob/1.8.13/forms_model.php#L587-L624
-		 * @link https://github.com/wp-premium/gravityforms/blob/1.8.13/includes/api.php#L495-L654
-		 * @link https://github.com/wp-premium/gravityforms/blob/1.8.7.11/forms_model.php#L587-L621
-		 */
-		if ( Core_Util::class_method_exists( 'GFAPI', 'update_entry' ) ) {
-			GFAPI::update_entry( $entry );
-		} elseif ( Core_Util::class_method_exists( 'GFFormsModel', 'update_lead' ) ) {
-			GFFormsModel::update_lead( $entry );
-		}
 	}
 
 	/**

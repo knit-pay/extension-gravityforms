@@ -3,7 +3,7 @@
  * Admin payment form post type
  *
  * @author    Pronamic <info@pronamic.eu>
- * @copyright 2005-2022 Pronamic
+ * @copyright 2005-2023 Pronamic
  * @license   GPL-3.0-or-later
  * @package   Pronamic\WordPress\Pay\Extensions\GravityForms
  */
@@ -17,7 +17,7 @@ use WP_Query;
 /**
  * Title: WordPress admin payment form post type
  * Description:
- * Copyright: 2005-2022 Pronamic
+ * Copyright: 2005-2023 Pronamic
  * Company: Pronamic
  *
  * @author  Remco Tolsma
@@ -138,7 +138,7 @@ class AdminPaymentFormPostType {
 		$form_id = get_post_meta( $post->ID, '_pronamic_pay_gf_form_id', true );
 		$post_id = $post->ID;
 
-		include dirname( __FILE__ ) . '/../views/html-admin-feed-meta-box.php';
+		include __DIR__ . '/../views/html-admin-feed-meta-box.php';
 	}
 
 	/**
@@ -179,32 +179,30 @@ class AdminPaymentFormPostType {
 		}
 
 		// Check if our nonce is set.
-		if ( ! filter_has_var( INPUT_POST, 'pronamic_pay_nonce' ) ) {
+		$nonce = \array_key_exists( 'pronamic_pay_nonce', $_POST ) ? \sanitize_text_field( \wp_unslash( $_POST['pronamic_pay_nonce'] ) ) : null;
+
+		if ( null === $nonce ) {
 			return $data;
 		}
 
-		$nonce = filter_input( INPUT_POST, 'pronamic_pay_nonce', FILTER_SANITIZE_STRING );
-
 		// Verify that the nonce is valid.
-		if ( ! wp_verify_nonce( $nonce, 'pronamic_pay_save_pay_gf' ) ) {
+		if ( ! \wp_verify_nonce( $nonce, 'pronamic_pay_save_pay_gf' ) ) {
 			return $data;
 		}
 
 		// If this is an autosave, our form has not been submitted, so we don't want to do anything.
-		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
+		if ( \defined( '\DOING_AUTOSAVE' ) && \DOING_AUTOSAVE ) {
 			return $data;
 		}
 
 		// Check the user's permissions.
-		if ( ! current_user_can( 'edit_post', $postarr['ID'] ) ) {
+		if ( ! \current_user_can( 'edit_post', $postarr['ID'] ) ) {
 			return $data;
 		}
 
 		/* OK, its safe for us to save the data now. */
-		if ( filter_has_var( INPUT_POST, '_pronamic_pay_gf_post_title' ) ) {
-			$post_title = filter_input( INPUT_POST, '_pronamic_pay_gf_post_title', FILTER_SANITIZE_STRING );
-
-			$data['post_title'] = sanitize_text_field( wp_unslash( $post_title ) );
+		if ( \array_key_exists( '_pronamic_pay_gf_post_title', $_POST ) ) {
+			$data['post_title'] = \sanitize_text_field( \wp_unslash( $_POST['_pronamic_pay_gf_post_title'] ) );
 		}
 
 		return $data;
@@ -217,68 +215,163 @@ class AdminPaymentFormPostType {
 	 */
 	public function save_post( $post_id ) {
 		// Check if our nonce is set.
-		if ( ! filter_has_var( INPUT_POST, 'pronamic_pay_nonce' ) ) {
+		$nonce = \array_key_exists( 'pronamic_pay_nonce', $_POST ) ? \sanitize_text_field( \wp_unslash( $_POST['pronamic_pay_nonce'] ) ) : null;
+
+		if ( null === $nonce ) {
 			return;
 		}
 
-		$nonce = filter_input( INPUT_POST, 'pronamic_pay_nonce', FILTER_SANITIZE_STRING );
-
 		// Verify that the nonce is valid.
-		if ( ! wp_verify_nonce( $nonce, 'pronamic_pay_save_pay_gf' ) ) {
+		if ( ! \wp_verify_nonce( $nonce, 'pronamic_pay_save_pay_gf' ) ) {
 			return;
 		}
 
 		// If this is an autosave, our form has not been submitted, so we don't want to do anything.
-		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
+		if ( \defined( '\DOING_AUTOSAVE' ) && \DOING_AUTOSAVE ) {
 			return;
 		}
 
 		// Check the user's permissions.
-		if ( ! current_user_can( 'edit_post', $post_id ) ) {
+		if ( ! \current_user_can( 'edit_post', $post_id ) ) {
 			return;
 		}
 
 		/* OK, its safe for us to save the data now. */
 		$definition = [
-			'_pronamic_pay_gf_form_id'                     => 'sanitize_text_field',
-			'_pronamic_pay_gf_config_id'                   => 'sanitize_text_field',
-			'_pronamic_pay_gf_entry_id_prefix'             => 'sanitize_text_field',
-			'_pronamic_pay_gf_order_id'                    => 'sanitize_text_field',
-			'_pronamic_pay_gf_transaction_description'     => 'sanitize_text_field',
-			'_pronamic_pay_gf_delay_admin_notification'    => FILTER_VALIDATE_BOOLEAN,
-			'_pronamic_pay_gf_delay_user_notification'     => FILTER_VALIDATE_BOOLEAN,
-			'_pronamic_pay_gf_delay_notification_ids'      => [
-				'filter' => FILTER_SANITIZE_STRING,
-				'flags'  => FILTER_REQUIRE_ARRAY,
+			'_pronamic_pay_gf_form_id'                     => [
+				'type' => 'string',
 			],
-			'_pronamic_pay_gf_delay_post_creation'         => FILTER_VALIDATE_BOOLEAN,
+			'_pronamic_pay_gf_config_id'                   => [
+				'type' => 'string',
+			],
+			'_pronamic_pay_gf_entry_id_prefix'             => [
+				'type' => 'string',
+			],
+			'_pronamic_pay_gf_order_id'                    => [
+				'type' => 'string',
+			],
+			'_pronamic_pay_gf_transaction_description'     => [
+				'type' => 'string',
+			],
+			'_pronamic_pay_gf_delay_admin_notification'    => [
+				'type' => 'boolean',
+			],
+			'_pronamic_pay_gf_delay_user_notification'     => [
+				'type' => 'boolean',
+			],
+			'_pronamic_pay_gf_delay_notification_ids'      => [
+				'type'        => 'array',
+				'uniqueItems' => true,
+				'items'       => [
+					'type' => 'string',
+				],
+			],
+			'_pronamic_pay_gf_delay_post_creation'         => [
+				'type' => 'boolean',
+			],
 			'_pronamic_pay_gf_fields'                      => [
-				'filter' => FILTER_SANITIZE_STRING,
-				'flags'  => FILTER_REQUIRE_ARRAY,
+				'type'  => 'object',
+				'items' => [
+					'type' => 'string',
+				],
 			],
 			'_pronamic_pay_gf_links'                       => [
-				'filter' => FILTER_SANITIZE_STRING,
-				'flags'  => FILTER_REQUIRE_ARRAY,
+				'type'  => 'object',
+				'items' => [
+					'type'       => 'object',
+					'properties' => [
+						'type'            => [
+							'type' => 'string',
+							'enum' => [
+								'confirmation',
+								'page',
+								'url',
+							],
+						],
+						'confirmation_id' => [
+							'type' => 'string',
+						],
+						'page_id'         => [
+							'type' => 'string',
+						],
+						'url'             => [
+							'type'   => 'string',
+							'format' => 'uri',
+						],
+					],
+				],
 			],
-			'_pronamic_pay_gf_user_role_field_id'          => 'sanitize_text_field',
-			'_pronamic_pay_gf_subscription_amount_type'    => 'sanitize_text_field',
-			'_pronamic_pay_gf_subscription_amount_field'   => 'sanitize_text_field',
-			'_pronamic_pay_gf_subscription_interval_type'  => 'sanitize_text_field',
-			'_pronamic_pay_gf_subscription_interval'       => FILTER_SANITIZE_NUMBER_INT,
-			'_pronamic_pay_gf_subscription_interval_period' => 'sanitize_text_field',
-			'_pronamic_pay_gf_subscription_interval_date_type' => 'sanitize_text_field',
-			'_pronamic_pay_gf_subscription_interval_date'  => 'sanitize_text_field',
-			'_pronamic_pay_gf_subscription_interval_date_day' => 'sanitize_text_field',
-			'_pronamic_pay_gf_subscription_interval_date_month' => 'sanitize_text_field',
-			'_pronamic_pay_gf_subscription_interval_date_prorate' => FILTER_VALIDATE_BOOLEAN,
-			'_pronamic_pay_gf_subscription_interval_field' => 'sanitize_text_field',
-			'_pronamic_pay_gf_subscription_frequency_type' => 'sanitize_text_field',
-			'_pronamic_pay_gf_subscription_number_periods' => FILTER_SANITIZE_NUMBER_INT,
-			'_pronamic_pay_gf_subscription_frequency_field' => 'sanitize_text_field',
+			'_pronamic_pay_gf_user_role_field_id'          => [
+				'type' => 'string',
+			],
+
+			// Subscriptions.
+			'_pronamic_pay_gf_subscription_amount_type'    => [
+				'type' => 'string',
+			],
+			'_pronamic_pay_gf_subscription_amount_field'   => [
+				'type' => 'string',
+			],
+			'_pronamic_pay_gf_subscription_interval_type'  => [
+				'type' => 'string',
+			],
+			'_pronamic_pay_gf_subscription_interval'       => [
+				'type' => 'integer',
+			],
+			'_pronamic_pay_gf_subscription_interval_period' => [
+				'type' => 'string',
+			],
+			'_pronamic_pay_gf_subscription_interval_date_type' => [
+				'type' => 'string',
+			],
+			'_pronamic_pay_gf_subscription_interval_date'  => [
+				'type' => 'string',
+			],
+			'_pronamic_pay_gf_subscription_interval_date_day' => [
+				'type' => 'string',
+			],
+			'_pronamic_pay_gf_subscription_interval_date_month' => [
+				'type' => 'string',
+			],
+			'_pronamic_pay_gf_subscription_interval_date_prorate' => [
+				'type' => 'boolean',
+			],
+			'_pronamic_pay_gf_subscription_interval_field' => [
+				'type' => 'string',
+			],
+			'_pronamic_pay_gf_subscription_frequency_type' => [
+				'type' => 'string',
+			],
+			'_pronamic_pay_gf_subscription_number_periods' => [
+				'type' => 'integer',
+			],
+			'_pronamic_pay_gf_subscription_frequency_field' => [
+				'type' => 'string',
+			],
+			'_pronamic_pay_gf_subscription_trial_enabled'  => [
+				'type' => 'boolean',
+			],
+			'_pronamic_pay_gf_subscription_trial_length'   => [
+				'type'    => 'integer',
+				'minimum' => 1,
+			],
+			'_pronamic_pay_gf_subscription_trial_length_unit' => [
+				'type' => 'string',
+				'enum' => [
+					'D',
+					'W',
+					'M',
+					'Y',
+				],
+			],
 
 			// Feed conditions.
-			'_gaddon_setting_feed_condition_conditional_logic_object' => 'sanitize_text_field',
-			'_gform_setting_feed_condition_conditional_logic_object' => 'sanitize_text_field',
+			'_gaddon_setting_feed_condition_conditional_logic_object' => [
+				'type' => 'string',
+			],
+			'_gform_setting_feed_condition_conditional_logic_object' => [
+				'type' => 'string',
+			],
 		];
 
 		$delay_actions = Extension::get_delay_actions();
@@ -291,27 +384,20 @@ class AdminPaymentFormPostType {
 		);
 
 		foreach ( $delay_actions as $action ) {
-			$definition[ $action['meta_key'] ] = FILTER_VALIDATE_BOOLEAN;
+			$definition[ $action['meta_key'] ] = [
+				'type' => 'boolean',
+			];
 		}
 
-		foreach ( $definition as $meta_key => $function ) {
+		foreach ( $definition as $meta_key => $schema ) {
 			$meta_value = null;
 
-			if ( 'sanitize_text_field' === $function ) {
-				if ( isset( $_POST[ $meta_key ] ) ) { // WPCS: input var OK.
-					$meta_value = sanitize_text_field( wp_unslash( $_POST[ $meta_key ] ) ); // WPCS: input var OK.
-				}
-			} else {
-				$filter  = $function;
-				$options = null;
-
-				if ( is_array( $function ) && isset( $function['filter'] ) ) {
-					$filter  = $function['filter'];
-					$options = $function;
-				}
-
-				$meta_value = filter_input( INPUT_POST, $meta_key, $filter, $options );
-			}
+			$meta_value = \rest_sanitize_value_from_schema(
+				// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Input is sanitized through REST schema.
+				\array_key_exists( $meta_key, $_POST ) ? $_POST[ $meta_key ] : null,
+				$schema,
+				$meta_key
+			);
 
 			// Set link type if none selected, use URL if both are set.
 			if ( '_pronamic_pay_gf_links' === $meta_key ) {
@@ -344,14 +430,14 @@ class AdminPaymentFormPostType {
 			}
 
 			if ( '_pronamic_pay_gf_subscription_interval_date' === $meta_key ) {
-				$period = filter_input( INPUT_POST, '_pronamic_pay_gf_subscription_interval_period', FILTER_SANITIZE_STRING );
+				$period = array_key_exists( '_pronamic_pay_gf_subscription_interval_period', $_POST ) ? \sanitize_text_field( \wp_unslash( $_POST['_pronamic_pay_gf_subscription_interval_period'] ) ) : null;
 
 				switch ( $period ) {
 					case 'M':
-						$meta_value = filter_input( INPUT_POST, '_pronamic_pay_gf_subscription_interval_m_date', FILTER_SANITIZE_STRING );
+						$meta_value = array_key_exists( '_pronamic_pay_gf_subscription_interval_m_date', $_POST ) ? \sanitize_text_field( \wp_unslash( $_POST['_pronamic_pay_gf_subscription_interval_m_date'] ) ) : '';
 						break;
 					case 'Y':
-						$meta_value = filter_input( INPUT_POST, '_pronamic_pay_gf_subscription_interval_y_date', FILTER_SANITIZE_STRING );
+						$meta_value = array_key_exists( '_pronamic_pay_gf_subscription_interval_y_date', $_POST ) ? \sanitize_text_field( \wp_unslash( $_POST['_pronamic_pay_gf_subscription_interval_y_date'] ) ) : '';
 						break;
 				}
 			}

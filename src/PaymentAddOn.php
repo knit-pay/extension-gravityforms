@@ -3,7 +3,7 @@
  * Payment add-on
  *
  * @author    Pronamic <info@pronamic.eu>
- * @copyright 2005-2022 Pronamic
+ * @copyright 2005-2023 Pronamic
  * @license   GPL-3.0-or-later
  * @package   Pronamic\WordPress\Pay\Extensions\GravityForms
  */
@@ -17,7 +17,7 @@ use WP_Query;
 /**
  * Title: WordPress pay extension Gravity Forms payment add-on
  * Description:
- * Copyright: 2005-2022 Pronamic
+ * Copyright: 2005-2023 Pronamic
  * Company: Pronamic
  *
  * @author  Remco Tolsma
@@ -68,6 +68,14 @@ class PaymentAddOn extends GFPaymentAddOn {
 	protected $_capabilities_uninstall = 'gravityforms_pronamic_pay_uninstall';
 
 	/**
+	 * Full path to this class file.
+	 *
+	 * @var string
+	 */
+	protected $_full_path = __FILE__;
+
+
+	/**
 	 * Construct and initialize an Gravity Forms payment add-on
 	 *
 	 * @link https://github.com/wp-premium/gravityforms/blob/1.9.10.15/includes/addon/class-gf-payment-addon.php
@@ -75,6 +83,8 @@ class PaymentAddOn extends GFPaymentAddOn {
 	 * @since 1.3.0
 	 */
 	public function __construct() {
+		$this->_path = str_replace( trailingslashit( \WP_PLUGIN_DIR ), '', $this->_full_path );
+
 		parent::__construct();
 
 		/*
@@ -128,8 +138,8 @@ class PaymentAddOn extends GFPaymentAddOn {
 			return;
 		}
 
-		$form_id = filter_input( INPUT_GET, 'id', FILTER_SANITIZE_STRING );
-		$post_id = filter_input( INPUT_GET, 'fid', FILTER_SANITIZE_STRING );
+		$form_id = filter_input( INPUT_GET, 'id', \FILTER_SANITIZE_NUMBER_INT );
+		$post_id = filter_input( INPUT_GET, 'fid', \FILTER_SANITIZE_NUMBER_INT );
 
 		if ( empty( $form_id ) ) {
 			return;
@@ -137,7 +147,8 @@ class PaymentAddOn extends GFPaymentAddOn {
 
 		check_admin_referer( 'pronamic_pay_save_pay_gf', 'pronamic_pay_nonce' );
 
-		$post_title = filter_input( INPUT_POST, '_pronamic_pay_gf_post_title', FILTER_SANITIZE_STRING );
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$post_title = \array_key_exists( '_pronamic_pay_gf_post_title', $_POST ) ? \sanitize_text_field( \wp_unslash( $_POST['_pronamic_pay_gf_post_title'] ) ) : '';
 
 		if ( '' === trim( $post_title ) ) {
 			$feeds = $this->get_feeds( $form_id );
@@ -252,8 +263,8 @@ class PaymentAddOn extends GFPaymentAddOn {
 	 * @param array $form Gravity Forms form.
 	 */
 	public function form_settings( $form ) {
-		$form_id = filter_input( INPUT_GET, 'id', FILTER_SANITIZE_STRING );
-		$post_id = filter_input( INPUT_GET, 'fid', FILTER_SANITIZE_STRING );
+		$form_id = filter_input( INPUT_GET, 'id', \FILTER_SANITIZE_NUMBER_INT );
+		$post_id = filter_input( INPUT_GET, 'fid', \FILTER_SANITIZE_NUMBER_INT );
 
 		if ( $this->is_detail_page() ) {
 			$feed = new PayFeed( $post_id );
@@ -265,7 +276,7 @@ class PaymentAddOn extends GFPaymentAddOn {
 				]
 			);
 
-			require dirname( __FILE__ ) . '/../views/html-admin-feed-gf-box.php';
+			require __DIR__ . '/../views/html-admin-feed-gf-box.php';
 		} else {
 			$this->feed_list_page( $form );
 		}
@@ -511,16 +522,17 @@ class PaymentAddOn extends GFPaymentAddOn {
 	/**
 	 * Display text if no pay feeds exist yet.
 	 *
-	 * @since unreleased
+	 * @link https://github.com/pronamic/gravityforms/blob/2.6.8/includes/addon/class-gf-feed-addon.php#L2390-L2392
+	 * @return string
 	 */
 	public function feed_list_no_item_message() {
 		/* translators: 1: <a href="new feed URL">, 2: </a> */
-		$label = __( 'This form doesn\'t have any pay feeds. Let\'s go %1$screate one%2$s.', 'pronamic_ideal' );
+		$label = \__( 'This form doesn’t have any pay feeds. Let’s go %1$screate one%2$s.', 'pronamic_ideal' );
 
-		printf(
+		return \sprintf(
 			// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 			$label,
-			'<a href="' . esc_url( add_query_arg( [ 'fid' => 0 ] ) ) . '">',
+			'<a href="' . \esc_url( \add_query_arg( [ 'fid' => 0 ] ) ) . '">',
 			'</a>'
 		);
 	}

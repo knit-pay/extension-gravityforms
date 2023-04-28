@@ -3,7 +3,7 @@
  * Admin
  *
  * @author    Pronamic <info@pronamic.eu>
- * @copyright 2005-2022 Pronamic
+ * @copyright 2005-2023 Pronamic
  * @license   GPL-3.0-or-later
  * @package   Pronamic\WordPress\Pay\Extensions\GravityForms
  */
@@ -11,12 +11,11 @@
 namespace Pronamic\WordPress\Pay\Extensions\GravityForms;
 
 use RGFormsModel;
-use stdClass;
 
 /**
  * Title: WordPress pay extension Gravity Forms admin
  * Description:
- * Copyright: 2005-2022 Pronamic
+ * Copyright: 2005-2023 Pronamic
  * Company: Pronamic
  *
  * @author  Remco Tolsma
@@ -26,6 +25,8 @@ use stdClass;
 class Admin {
 	/**
 	 * Bootstrap.
+	 * 
+	 * @return void
 	 */
 	public static function bootstrap() {
 		// Actions.
@@ -43,6 +44,8 @@ class Admin {
 
 	/**
 	 * Admin initialize.
+	 * 
+	 * @return void
 	 */
 	public static function admin_init() {
 		new AdminPaymentFormPostType();
@@ -51,9 +54,8 @@ class Admin {
 	/**
 	 * Add menu item to form settings.
 	 *
-	 * @param array $menu_items Array with form settings menu items.
-	 *
-	 * @return array
+	 * @param array<array<string, string>> $menu_items Array with form settings menu items.
+	 * @return array<array<string, string>>
 	 */
 	public static function form_settings_menu_item( $menu_items ) {
 		$menu_items[] = [
@@ -70,6 +72,7 @@ class Admin {
 	 *
 	 * @param string $form_id Gravity Forms form ID.
 	 * @param array  $lead    Gravity Forms lead/entry.
+	 * @return void
 	 */
 	public static function entry_info( $form_id, $lead ) {
 		$payment_id = gform_get_meta( $lead['id'], 'pronamic_payment_id' );
@@ -88,8 +91,8 @@ class Admin {
 	/**
 	 * Custom merge tags.
 	 *
-	 * @param array $merge_tags Array with merge tags.
-	 * @return array
+	 * @param array<array<string, string>> $merge_tags Array with merge tags.
+	 * @return array<array<string, string>>
 	 */
 	public static function custom_merge_tags( $merge_tags ) {
 		// Payment.
@@ -197,11 +200,12 @@ class Admin {
 	 * Maybe redirect to Gravity Forms entry
 	 */
 	public static function maybe_redirect_to_entry() {
-		if ( ! filter_has_var( INPUT_GET, 'pronamic_gf_lid' ) ) {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$lead_id = \array_key_exists( 'pronamic_gf_lid', $_GET ) ? \sanitize_text_field( \wp_unslash( $_GET['pronamic_gf_lid'] ) ) : null;
+
+		if ( null === $lead_id ) {
 			return;
 		}
-
-		$lead_id = filter_input( INPUT_GET, 'pronamic_gf_lid', FILTER_SANITIZE_STRING );
 
 		$lead = RGFormsModel::get_lead( $lead_id );
 
@@ -226,7 +230,7 @@ class Admin {
 	 * Handle AJAX request get form data
 	 */
 	public static function ajax_get_form_data() {
-		$form_id = filter_input( INPUT_GET, 'formId', FILTER_SANITIZE_STRING );
+		$form_id = \filter_input( INPUT_GET, 'formId', \FILTER_SANITIZE_NUMBER_INT );
 
 		$data = RGFormsModel::get_form_meta( $form_id );
 

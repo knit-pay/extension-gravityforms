@@ -3,7 +3,7 @@
  * Payment data
  *
  * @author    Pronamic <info@pronamic.eu>
- * @copyright 2005-2022 Pronamic
+ * @copyright 2005-2023 Pronamic
  * @license   GPL-3.0-or-later
  * @package   Pronamic\WordPress\Pay\Extensions\GravityForms
  */
@@ -11,7 +11,7 @@
 namespace Pronamic\WordPress\Pay\Extensions\GravityForms;
 
 use GFCommon;
-use Pronamic\WordPress\Pay\Core\PaymentMethods;
+use Pronamic\WordPress\Money\Money;
 use Pronamic\WordPress\Pay\Core\Util as Core_Util;
 use Pronamic\WordPress\Pay\CreditCard;
 use RGFormsModel;
@@ -19,7 +19,7 @@ use RGFormsModel;
 /**
  * Title: WordPress pay extension Gravity Forms payment data
  * Description:
- * Copyright: 2005-2022 Pronamic
+ * Copyright: 2005-2023 Pronamic
  * Company: Pronamic
  *
  * @author  Remco Tolsma
@@ -70,7 +70,7 @@ class PaymentData {
 	 *
 	 * @return null|string
 	 */
-	public function get_field_value( $field_name ) : ?string {
+	public function get_field_value( $field_name ): ?string {
 		if ( ! isset( $this->feed->fields[ $field_name ] ) ) {
 			return null;
 		}
@@ -97,7 +97,7 @@ class PaymentData {
 	 *
 	 * @return string
 	 */
-	public function get_description() : string {
+	public function get_description(): string {
 		$description = $this->feed->transaction_description;
 
 		if ( empty( $description ) ) {
@@ -114,7 +114,7 @@ class PaymentData {
 	 *
 	 * @return string
 	 */
-	public function get_order_id() : string {
+	public function get_order_id(): string {
 		$order_id = $this->feed->order_id;
 
 		if ( ! empty( $this->feed->entry_id_prefix ) ) {
@@ -135,7 +135,7 @@ class PaymentData {
 	 *
 	 * @return string
 	 */
-	public function get_currency_alphabetic_code() : string {
+	public function get_currency_alphabetic_code(): string {
 		if ( isset( $this->lead['currency'] ) ) {
 			return $this->lead['currency'];
 		}
@@ -148,7 +148,7 @@ class PaymentData {
 	 *
 	 * @return string|null
 	 */
-	public function get_payment_method() : ?string {
+	public function get_payment_method(): ?string {
 		$fields = GFCommon::get_fields_by_type( $this->form, [ Fields::PAYMENT_METHODS_FIELD_TYPE ] );
 
 		foreach ( $fields as $field ) {
@@ -167,7 +167,7 @@ class PaymentData {
 	 *
 	 * @return string|null
 	 */
-	public function get_issuer_id() : ?string {
+	public function get_issuer_id(): ?string {
 		$fields = GFCommon::get_fields_by_type( $this->form, [ IssuersField::TYPE ] );
 
 		foreach ( $fields as $field ) {
@@ -186,44 +186,56 @@ class PaymentData {
 	 *
 	 * @return CreditCard|null
 	 */
-	public function get_credit_card() : ?CreditCard {
-		$credit_card = null;
-
+	public function get_credit_card(): ?CreditCard {
 		$credit_card_fields = GFCommon::get_fields_by_type( $this->form, [ 'creditcard' ] );
 
 		$credit_card_field = array_shift( $credit_card_fields );
 
-		if ( $credit_card_field ) {
-			$credit_card = new CreditCard();
-
-			// Number.
-			$variable_name = sprintf( 'input_%s_1', $credit_card_field['id'] );
-			$number        = filter_input( INPUT_POST, $variable_name, FILTER_SANITIZE_STRING );
-
-			$credit_card->set_number( $number );
-
-			// Expiration date.
-			$variable_name   = sprintf( 'input_%s_2', $credit_card_field['id'] );
-			$expiration_date = filter_input( INPUT_POST, $variable_name, FILTER_VALIDATE_INT, FILTER_FORCE_ARRAY );
-
-			$month = array_shift( $expiration_date );
-			$year  = array_shift( $expiration_date );
-
-			$credit_card->set_expiration_month( $month );
-			$credit_card->set_expiration_year( $year );
-
-			// Security code.
-			$variable_name = sprintf( 'input_%s_3', $credit_card_field['id'] );
-			$security_code = filter_input( INPUT_POST, $variable_name, FILTER_SANITIZE_STRING );
-
-			$credit_card->set_security_code( $security_code );
-
-			// Name.
-			$variable_name = sprintf( 'input_%s_5', $credit_card_field['id'] );
-			$name          = filter_input( INPUT_POST, $variable_name, FILTER_SANITIZE_STRING );
-
-			$credit_card->set_name( $name );
+		if ( null === $credit_card_field ) {
+			return null;
 		}
+
+		$credit_card = new CreditCard();
+
+		// phpcs:disable WordPress.Security.NonceVerification.Missing -- Nonce is not necessary because this parameter does not trigger an action.
+
+		// Number.
+		$variable_name = sprintf( 'input_%s_1', $credit_card_field['id'] );
+
+		$number = \array_key_exists( $variable_name, $_POST ) ? \sanitize_text_field( \wp_unslash( $_POST[ $variable_name ] ) ) : null;
+
+		$credit_card->set_number( $number );
+
+		// Expiration date.
+		$variable_name = sprintf( 'input_%s_2', $credit_card_field['id'] );
+
+		if ( \array_key_exists( $variable_name, $_POST ) && \is_array( $_POST[ $variable_name ] ) ) {
+			$data = \array_map( 'sanitize_text_field', \wp_unslash( $_POST[ $variable_name ] ) );
+
+			if ( \array_key_exists( 0, $data ) ) {
+				$credit_card->set_expiration_month( $data[0] );
+			}
+
+			if ( \array_key_exists( 1, $data ) ) {
+				$credit_card->set_expiration_year( $data[1] );
+			}
+		}
+
+		// Security code.
+		$variable_name = sprintf( 'input_%s_3', $credit_card_field['id'] );
+
+		$security_code = \array_key_exists( $variable_name, $_POST ) ? \sanitize_text_field( \wp_unslash( $_POST[ $variable_name ] ) ) : null;
+
+		$credit_card->set_security_code( $security_code );
+
+		// Name.
+		$variable_name = sprintf( 'input_%s_5', $credit_card_field['id'] );
+
+		$name = \array_key_exists( $variable_name, $_POST ) ? \sanitize_text_field( \wp_unslash( $_POST[ $variable_name ] ) ) : null;
+
+		$credit_card->set_name( $name );
+
+		// phpcs:enable WordPress.Security.NonceVerification.Missing
 
 		return $credit_card;
 	}
@@ -233,7 +245,7 @@ class PaymentData {
 	 *
 	 * @return int|null
 	 */
-	public function get_subscription_frequency() : ?int {
+	public function get_subscription_frequency(): ?int {
 		$frequency = null;
 
 		switch ( $this->feed->subscription_frequency_type ) {
@@ -261,7 +273,7 @@ class PaymentData {
 	 *
 	 * @return object
 	 */
-	public function get_subscription_interval() : object {
+	public function get_subscription_interval(): object {
 		$interval = (object) [
 			'unit'  => 'D',
 			'value' => null,

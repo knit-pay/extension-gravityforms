@@ -3,7 +3,7 @@
  * Processor
  *
  * @author    Pronamic <info@pronamic.eu>
- * @copyright 2005-2022 Pronamic
+ * @copyright 2005-2023 Pronamic
  * @license   GPL-3.0-or-later
  * @package   Pronamic\WordPress\Pay\Extensions\GravityForms
  */
@@ -33,7 +33,7 @@ use Pronamic\WordPress\Pay\Subscriptions\SubscriptionPhase;
 /**
  * Title: WordPress pay extension Gravity Forms processor
  * Description:
- * Copyright: 2005-2022 Pronamic
+ * Copyright: 2005-2023 Pronamic
  * Company: Pronamic
  *
  * @author  Remco Tolsma
@@ -134,7 +134,7 @@ class Processor {
 		 */
 
 		// Lead.
-		add_action( 'gform_entry_post_save', [ $this, 'entry_post_save' ], 10, 2 );
+		add_filter( 'gform_entry_post_save', [ $this, 'entry_post_save' ], 10, 2 );
 
 		// Delay (@see GFFormDisplay::handle_submission > GFCommon::send_form_submission_notifications).
 		add_filter( 'gform_disable_admin_notification_' . $this->form_id, [ $this, 'maybe_delay_admin_notification' ], 10, 3 );
@@ -399,6 +399,7 @@ class Processor {
 						}
 					}
 
+					// Subscription line.
 					if (
 						GravityForms::SUBSCRIPTION_AMOUNT_FIELD === $this->feed->subscription_amount_type
 							&&
@@ -445,6 +446,15 @@ class Processor {
 		 * @link https://github.com/wp-pay-extensions/gravityforms/blob/2.4.0/src/PaymentData.php#L231-L264
 		 */
 
+		/**
+		 * Subscription payment lines.
+		 */
+		if ( GravityForms::SUBSCRIPTION_AMOUNT_TOTAL === $this->feed->subscription_amount_type ) {
+			foreach ( $payment->lines as $line ) {
+				$subscription_lines->add_line( $line );
+			}
+		}
+
 		// Does payment contain any lines?
 		if ( 0 === count( $payment->lines ) ) {
 			return $lead;
@@ -478,12 +488,6 @@ class Processor {
 		 *
 		 * As soon as a recurring amount is set, we create a subscription.
 		 */
-		if ( GravityForms::SUBSCRIPTION_AMOUNT_TOTAL === $this->feed->subscription_amount_type ) {
-			foreach ( $payment->lines as $line ) {
-				$subscription_lines->add_line( $line );
-			}
-		}
-
 		$interval = $data->get_subscription_interval();
 
 		if ( null !== $interval->value && $interval->value > 0 && $subscription_lines->get_amount()->get_value() > 0 ) {
@@ -497,6 +501,29 @@ class Processor {
 
 			// Phase.
 			$start_date = new \DateTimeImmutable();
+
+			// Trial phase.
+			$trial = $this->feed->get_subscription_trial();
+
+			if ( $trial->enabled ) {
+				$trial_phase = new SubscriptionPhase(
+					$subscription,
+					$start_date,
+					new SubscriptionInterval( 'P' . $trial->length . $trial->length_unit ),
+					$payment->lines->get_amount()
+				);
+
+				$trial_phase->set_total_periods( 1 );
+				$trial_phase->set_trial( true );
+
+				$subscription->add_phase( $trial_phase );
+
+				$trial_end_date = $trial_phase->get_end_date();
+
+				if ( null !== $trial_end_date ) {
+					$start_date = $trial_end_date;
+				}
+			}
 
 			$phase = new SubscriptionPhase(
 				$subscription,
@@ -589,7 +616,7 @@ class Processor {
 		try {
 			/**
 			 * Currently there is no support for manual renewals with Gravity Forms.
-			 * 
+			 *
 			 * @link https://github.com/pronamic/wp-pay-core/pull/80
 			 * @link https://github.com/pronamic/wp-pronamic-pay-woocommerce/issues/15
 			 */
@@ -672,7 +699,7 @@ class Processor {
 			}
 		}
 
-		GravityForms::update_entry( $entry );
+		\GFAPI::update_entry( $entry );
 
 		return $entry;
 	}
@@ -825,6 +852,5 @@ class Processor {
 	 * @param array $form Gravity Forms form.
 	 */
 	public function after_submission( $lead, $form ) {
-
 	}
 }

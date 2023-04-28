@@ -3,7 +3,7 @@
  * Pay feed
  *
  * @author    Pronamic <info@pronamic.eu>
- * @copyright 2005-2022 Pronamic
+ * @copyright 2005-2023 Pronamic
  * @license   GPL-3.0-or-later
  * @package   Pronamic\WordPress\Pay\Extensions\GravityForms
  */
@@ -15,12 +15,37 @@ use WP_Post;
 /**
  * Title: WordPress pay extension Gravity Forms pay feed
  * Description:
- * Copyright: 2005-2022 Pronamic
+ * Copyright: 2005-2023 Pronamic
  * Company: Pronamic
  *
- * @author  Remco Tolsma
- * @version 2.6.1
- * @since   1.4.4
+ * @author   Remco Tolsma
+ * @version  2.6.1
+ * @since    1.4.4
+ *
+ * @todo     This class has too many settings properties, should we move this to a settings/options array?
+ * @property mixed $form_id
+ * @property mixed $config_id
+ * @property mixed $entry_id_prefix
+ * @property mixed $order_id
+ * @property mixed $transaction_description
+ * @property mixed $delay_actions
+ * @property mixed $user_role_field_id
+ * @property mixed $subscription_amount_type
+ * @property mixed $subscription_amount_field
+ * @property mixed $subscription_interval_type
+ * @property mixed $subscription_interval
+ * @property mixed $subscription_interval_period
+ * @property mixed $subscription_interval_date_type
+ * @property mixed $subscription_interval_date
+ * @property mixed $subscription_interval_date_day
+ * @property mixed $subscription_interval_date_month
+ * @property mixed $subscription_interval_date_prorate
+ * @property mixed $subscription_interval_field
+ * @property mixed $subscription_frequency_type
+ * @property mixed $subscription_number_periods
+ * @property mixed $subscription_frequency_field
+ * @property mixed $fields
+ * @property mixed $links
  */
 class PayFeed {
 	/**
@@ -140,7 +165,7 @@ class PayFeed {
 
 		// JSON decode conditional logic object.
 		if ( ! empty( $conditional_logic_object ) ) {
-			$conditional_logic_object = \html_entity_decode( $conditional_logic_object );
+			$conditional_logic_object = \html_entity_decode( $conditional_logic_object, \ENT_COMPAT );
 
 			$conditional_logic_object = \json_decode( $conditional_logic_object, true );
 
@@ -270,6 +295,21 @@ class PayFeed {
 		// Links.
 		$links       = get_post_meta( $post_id, '_pronamic_pay_gf_links', true );
 		$this->links = is_array( $links ) ? $links : [];
+	}
+
+	/**
+	 * Get subscription trial.
+	 *
+	 * @return object
+	 */
+	public function get_subscription_trial(): object {
+		$meta_key_prefix = '_pronamic_pay_gf_subscription_trial_';
+
+		return (object) [
+			'enabled'     => '1' === \get_post_meta( $this->id, $meta_key_prefix . 'enabled', true ),
+			'length'      => \max( 1, (int) \get_post_meta( $this->id, $meta_key_prefix . 'length', true ) ),
+			'length_unit' => \get_post_meta( $this->id, $meta_key_prefix . 'length_unit', true ),
+		];
 	}
 
 	/**

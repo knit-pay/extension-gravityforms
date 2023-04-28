@@ -3,7 +3,7 @@
  * Payment methods field
  *
  * @author    Pronamic <info@pronamic.eu>
- * @copyright 2005-2022 Pronamic
+ * @copyright 2005-2023 Pronamic
  * @license   GPL-3.0-or-later
  * @package   Pronamic\WordPress\Pay\Extensions\GravityForms
  */
@@ -18,7 +18,7 @@ use Pronamic\WordPress\Pay\Plugin;
 /**
  * Title: WordPress pay extension Gravity Forms payment methods
  * Description:
- * Copyright: 2005-2022 Pronamic
+ * Copyright: 2005-2023 Pronamic
  * Company: Pronamic
  *
  * @author  Remco Tolsma
@@ -97,9 +97,14 @@ class PaymentMethodsField extends GF_Field_Select {
 			 */
 			$this->inputs = [];
 
-			if ( empty( $this->formId ) && 'gf_edit_forms' === filter_input( INPUT_GET, 'page', FILTER_SANITIZE_STRING ) ) {
-				$this->formId = filter_input( INPUT_GET, 'id', FILTER_SANITIZE_STRING );
+			// phpcs:disable WordPress.Security.NonceVerification.Recommended
+			$page = \array_key_exists( 'page', $_GET ) ? \sanitize_text_field( \wp_unslash( $_GET['page'] ) ) : null;
+
+			if ( empty( $this->formId ) && 'gf_edit_forms' === $page ) {
+				$this->formId = \array_key_exists( 'id', $_GET ) ? \sanitize_text_field( \wp_unslash( $_GET['id'] ) ) : null;
 			}
+
+			// phpcs:enable WordPress.Security.NonceVerification.Recommended
 		}
 
 		// Choices.
@@ -176,6 +181,18 @@ class PaymentMethodsField extends GF_Field_Select {
 	}
 
 	/**
+	 * Returns the field's form editor icon.
+	 *
+	 * This could be an icon url or a gform-icon class.
+	 *
+	 * @link https://github.com/pronamic/gravityforms/blob/2.7.3/includes/fields/class-gf-field-address.php#L51-L62
+	 * @return string
+	 */
+	public function get_form_editor_field_icon() {
+		return 'gform-icon--credit-card';
+	}
+
+	/**
 	 * Get the gateways for this field.
 	 *
 	 * @return array
@@ -240,6 +257,8 @@ class PaymentMethodsField extends GF_Field_Select {
 
 				$choice['builtin'] = isset( $payment_methods[ $value ] );
 
+				$choice['enabled'] = isset( $choice['isSelected'] ) && $choice['isSelected'];
+
 				$choices[ $value ] = $choice;
 			}
 		}
@@ -253,6 +272,7 @@ class PaymentMethodsField extends GF_Field_Select {
 					'text'       => $label,
 					'isSelected' => false,
 					'builtin'    => true,
+					'enabled'    => false,
 				];
 			}
 		}
@@ -262,27 +282,23 @@ class PaymentMethodsField extends GF_Field_Select {
 	}
 
 	/**
-	 * Filter Gravity Forms selected choice.
+	 * Filter Gravity Forms enabled choice.
 	 *
 	 * @param array $choice Choice.
 	 *
-	 * @return boolean true if 'isSelected' is set and true, false otherwise.
+	 * @return boolean true if `enabled` is set and true, false otherwise.
 	 */
-	public static function filter_choice_is_selected( $choice ) {
-		return is_array( $choice ) && isset( $choice['isSelected'] ) && $choice['isSelected'];
+	public static function filter_choice_is_enabled( $choice ) {
+		return is_array( $choice ) && isset( $choice['enabled'] ) && $choice['enabled'];
 	}
 
 	/**
 	 * Unselect the specified choice.
 	 *
 	 * @param array $choice Choice.
-	 *
-	 * @return array choice
 	 */
-	public function unselect_choice( $choice ) {
+	public static function unselect_choice( &$choice ) {
 		$choice['isSelected'] = false;
-
-		return $choice;
 	}
 
 	/**
@@ -297,23 +313,20 @@ class PaymentMethodsField extends GF_Field_Select {
 	 *
 	 * @return string
 	 */
-	public function get_field_input( $form, $value = '', $entry = null ) {
+	public function get_field_input( $form, $value = null, $entry = null ) {
 		// Filter choices for display.
 		$choices = $this->choices;
 
-		$display_choices = $choices;
+		$display_choices = array_filter( $choices, [ __CLASS__, 'filter_choice_is_enabled' ] );
 
-		if ( \is_admin() && 'gf_edit_forms' === \filter_input( \INPUT_GET, 'page', \FILTER_SANITIZE_STRING ) ) {
-			$display_choices = array_filter( $choices, [ __CLASS__, 'filter_choice_is_selected' ] );
+		// Select first item.
+		\array_walk( $display_choices, [ __CLASS__, 'unselect_choice' ] );
+
+		$index = \array_key_first( $display_choices );
+
+		if ( null !== $index ) {
+			$display_choices[ $index ]['isSelected'] = true;
 		}
-
-		// Make first item selected.
-		\array_walk(
-			$display_choices,
-			function ( &$item, $key ) {
-				$item['isSelected'] = ( 0 === $key );
-			}
-		);
 
 		$this->choices = \array_values( $display_choices );
 
@@ -646,14 +659,18 @@ class PaymentMethodsField extends GF_Field_Select {
 	 * @return array<mixed>
 	 */
 	public static function form_update_meta( $form_meta, $form_id, $meta_name ) {
-		if ( 'display_meta' === $meta_name ) {
-			foreach ( $form_meta['fields'] as &$field ) {
-				if ( self::TYPE !== $field['type'] ) {
-					continue;
-				}
+		// Check meta name.
+		if ( 'display_meta' !== $meta_name ) {
+			return $form_meta;
+		}
 
-				$field->inputType = 'select';
+		// Set input type.
+		foreach ( $form_meta['fields'] as &$field ) {
+			if ( self::TYPE !== $field['type'] ) {
+				continue;
 			}
+
+			$field->inputType = 'select';
 		}
 
 		return $form_meta;
@@ -675,15 +692,17 @@ class PaymentMethodsField extends GF_Field_Select {
 			}
 
 			// Remove unselected choices.
-			$display_choices = array_filter( $field['choices'], [ __CLASS__, 'filter_choice_is_selected' ] );
+			$display_choices = array_filter( $field['choices'], [ __CLASS__, 'filter_choice_is_enabled' ] );
 
-			// Set first item as selected.
-			\array_walk(
-				$display_choices,
-				function ( &$item, $key ) {
-					$item['isSelected'] = ( 0 === $key );
-				}
-			);
+			// Select first item.
+			\array_walk( $display_choices, [ __CLASS__, 'unselect_choice' ] );
+
+			$index = \array_key_first( $display_choices );
+
+			if ( null !== $index ) {
+				$display_choices[ $index ]['isSelected'] = true;
+			}
+
 
 			// Set field choices.
 			$field['choices'] = $display_choices;
@@ -749,7 +768,7 @@ class PaymentMethodsField extends GF_Field_Select {
 			$methods = $gateway->get_payment_methods(
 				[
 					'status' => [ '', 'active' ],
-				] 
+				]
 			);
 
 			foreach ( $methods as $method ) {
@@ -777,29 +796,28 @@ class PaymentMethodsField extends GF_Field_Select {
 	public function editor_js_set_default_values() {
 		?>
 		case '<?php echo esc_js( self::TYPE ); ?>' :
-		if ( ! field.label ) {
-		field.label = '<?php echo esc_js( __( 'Choose a payment method', 'pronamic_ideal' ) ); ?>';
-		}
+			if ( ! field.label ) {
+				field.label = '<?php echo esc_js( __( 'Choose a payment method', 'pronamic_ideal' ) ); ?>';
+			}
 
-		field.enableChoiceValue = true;
+			field.enableChoiceValue = true;
 
-		if ( ! field.choices ) {
-		field.choices = new Array();
+			if ( ! field.choices ) {
+				field.choices = new Array();
 
-		<?php foreach ( $this->get_gateway_payment_methods() as $payment_method => $name ) : ?>
+				<?php foreach ( $this->get_gateway_payment_methods() as $payment_method => $name ) : ?>
 
-			var choice = new Choice( <?php echo wp_json_encode( $name ); ?>, <?php echo wp_json_encode( strval( $payment_method ) ); ?> );
+					var choice = new Choice( <?php echo wp_json_encode( $name ); ?>, <?php echo wp_json_encode( strval( $payment_method ) ); ?> );
 
-			choice.isSelected = true;
-			choice.builtin    = true;
+					choice.isSelected = true;
+					choice.builtin    = true;
 
-			field.choices.push( choice );
+					field.choices.push( choice );
 
-		<?php endforeach; ?>
+				<?php endforeach; ?>
+			}
 
-		}
-
-		break;
+			break;
 		<?php
 	}
 }

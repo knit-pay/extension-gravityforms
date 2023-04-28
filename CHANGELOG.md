@@ -7,6 +7,122 @@ This projects adheres to [Semantic Versioning](http://semver.org/) and [Keep a C
 ## [Unreleased][unreleased]
 -
 
+## [4.5.4] - 2023-03-30
+
+### Commits
+
+- Fixed refunded amount check. ([ea2f0e9](https://github.com/pronamic/wp-pronamic-pay-gravityforms/commit/ea2f0e9463052d4d5ce349783a0569eb75505644))
+- Updated field icons. ([4bf8242](https://github.com/pronamic/wp-pronamic-pay-gravityforms/commit/4bf8242652cb73b2dfdefc46c5141e0ad479ebfa))
+
+Full set of changes: [`4.5.3...4.5.4`][4.5.4]
+
+[4.5.4]: https://github.com/pronamic/wp-pronamic-pay-gravityforms/compare/v4.5.3...v4.5.4
+
+## [4.5.3] - 2023-03-10
+
+### Commits
+
+- Set Composer type to `wordpress-plugin`. ([9e5255a](https://github.com/pronamic/wp-pronamic-pay-gravityforms/commit/9e5255a40908235d28ecd8cbcdcbc8dc5fe7d1fa))
+- Updated .gitattributes ([fca89e2](https://github.com/pronamic/wp-pronamic-pay-gravityforms/commit/fca89e24ea2420a931cc19333d1b140ef55c0fec))
+- Set default `inputs` parameter to `true` in dropdown input. ([69a3f52](https://github.com/pronamic/wp-pronamic-pay-gravityforms/commit/69a3f525a76fe2a5c8bf1bd11a2173a5ebd51aad))
+
+Full set of changes: [`4.5.2...4.5.3`][4.5.3]
+
+[4.5.3]: https://github.com/pronamic/wp-pronamic-pay-gravityforms/compare/v4.5.2...v4.5.3
+
+## [4.5.2] - 2023-02-16
+
+### Fixed
+
+- Fixed field inputs options in recurring amount settings field. ([#30](https://github.com/pronamic/wp-pronamic-pay-gravityforms/issues/30))
+
+### Composer
+
+- Changed `wp-pay/core` from `^4.6` to `v4.7.2`.
+	Release notes: https://github.com/pronamic/wp-pay-core/releases/tag/v4.7.2
+Full set of changes: [`4.5.1...4.5.2`][4.5.2]
+
+[4.5.2]: https://github.com/pronamic/wp-pronamic-pay-gravityforms/compare/v4.5.1...v4.5.2
+
+## [4.5.1] - 2023-01-31
+### Commits
+
+- Fixed all choices being removed from payment method field when using the Gravity Forms Partial Entries Add-On (fixes #27). ([73cb2e8](https://github.com/pronamic/wp-pronamic-pay-gravityforms/commit/73cb2e8bd9b87825de95456a6dbb971a4bd86a6c))
+
+### Composer
+
+- Changed `php` from `>=8.0` to `>=7.4`.
+Full set of changes: [`4.5.0...4.5.1`][4.5.1]
+
+[4.5.1]: https://github.com/pronamic/wp-pronamic-pay-gravityforms/compare/v4.5.0...v4.5.1
+
+## [4.5.0] - 2023-01-18
+### Added
+
+- Added support for trial period subscription.
+
+### Changed
+
+- Editing a Gravity Forms payment feed uses less JavaScript. 
+
+### Commits
+
+- Only show delay notifications settings if there is one ore more. ([b85708e](https://github.com/pronamic/wp-pronamic-pay-gravityforms/commit/b85708e1b3d75a7e0e85926aeb475e626b84d33e))
+
+Full set of changes: [`4.4.2...4.5.0`][4.5.0]
+
+[4.5.0]: https://github.com/pronamic/wp-pronamic-pay-gravityforms/compare/v4.4.2...v4.5.0
+
+## [4.4.2] - 2023-01-04
+### Fixed
+
+- Fixed problem with saving status page settings in payment feed. ([#14](https://github.com/pronamic/wp-pronamic-pay-gravityforms/issues/14))
+
+### Commits
+
+- Use REST API to sanitize complex input types. ([4c0ffa3](https://github.com/pronamic/wp-pronamic-pay-gravityforms/commit/4c0ffa32a3e824231f908358bec666c25eccbbcb))
+- Use file hashes for script and style version. ([d6d75c4](https://github.com/pronamic/wp-pronamic-pay-gravityforms/commit/d6d75c460b6797b9525e34e7c8b0c80ae05f282a))
+- Fixed PHPStan:  Callback expects 1 parameter, $accepted_args is set to 3. ([5b2dfc6](https://github.com/pronamic/wp-pronamic-pay-gravityforms/commit/5b2dfc610233bc78468abdf8c6bd992338907721))
+- Removed `GravityForms::update_entry( $entry )` function, no longer support Gravity Forms versions before 1.8.8. ([f945126](https://github.com/pronamic/wp-pronamic-pay-gravityforms/commit/f945126f8e66c082189939c6bb9404901905ad1d))
+- The `gform_entry_post_save` hook is a filter, not an action. ([eec0d35](https://github.com/pronamic/wp-pronamic-pay-gravityforms/commit/eec0d3598457af5f34bbc0571f2467efbf19661c))
+- Happy 2023. ([8572f8e](https://github.com/pronamic/wp-pronamic-pay-gravityforms/commit/8572f8e14b5ec827ff8f900d50ba3063958febc3))
+
+Full set of changes: [`4.4.1...4.4.2`][4.4.2]
+
+[4.4.2]: https://github.com/pronamic/wp-pronamic-pay-gravityforms/compare/v4.4.1...v4.4.2
+
+## [4.4.1] - 2022-12-23
+
+### Commits
+
+- Fixed incorrect update message after updating payment feed. ([39f5e1e](https://github.com/pronamic/wp-pronamic-pay-gravityforms/commit/39f5e1e6e64a58881c67c177f5872806a29749c8))
+
+Full set of changes: [`4.4.0...4.4.1`][4.4.1]
+
+[4.4.1]: https://github.com/pronamic/wp-pronamic-pay-gravityforms/compare/v4.4.0...v4.4.1
+
+## [4.4.0] - 2022-12-23
+
+### Commits
+
+- Added support for https://github.com/WordPress/wp-plugin-dependencies. ([5d7688c](https://github.com/pronamic/wp-pronamic-pay-gravityforms/commit/5d7688cde8bac5597f81a8c6b137f4006db46aa2))
+- Fixed "Deprecated: dirname(): Passing null to parameter #1 ($path) of type string is deprecated in /wp-content/plugins/gravityforms/includes/addon/class-gf-addon.php on line 6168". ([91e5328](https://github.com/pronamic/wp-pronamic-pay-gravityforms/commit/91e5328becdde0eb48a369bc46a204288a12cf53))
+
+### Composer
+
+- Changed `php` from `>=5.6.20` to `>=8.0`.
+- Changed `pronamic/wp-datetime` from `^2.0` to `v2.1.0`.
+	Release notes: https://github.com/pronamic/wp-datetime/releases/tag/v4.3.0
+- Changed `pronamic/wp-money` from `^2.0` to `v2.2.0`.
+	Release notes: https://github.com/pronamic/wp-money/releases/tag/v4.3.0
+- Changed `pronamic/wp-number` from `^1.1` to `v1.2.0`.
+	Release notes: https://github.com/pronamic/wp-number/releases/tag/v4.3.0
+- Changed `wp-pay/core` from `^4.5` to `v4.6.0`.
+	Release notes: https://github.com/pronamic/wp-pay-core/releases/tag/v4.3.0
+Full set of changes: [`4.3.0...4.4.0`][4.4.0]
+
+[4.4.0]: https://github.com/pronamic/wp-pronamic-pay-gravityforms/compare/v4.3.0...v4.4.0
+
 ## [4.3.0] - 2022-11-07
 - No support for manual renewals with Gravity Forms.
 

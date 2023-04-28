@@ -3,7 +3,7 @@
  * Issuers field
  *
  * @author    Pronamic <info@pronamic.eu>
- * @copyright 2005-2022 Pronamic
+ * @copyright 2005-2023 Pronamic
  * @license   GPL-3.0-or-later
  * @package   Pronamic\WordPress\Pay\Extensions\GravityForms
  */
@@ -19,7 +19,7 @@ use Pronamic\WordPress\Pay\Plugin;
 /**
  * Title: WordPress pay extension Gravity Forms issuers field
  * Description:
- * Copyright: 2005-2022 Pronamic
+ * Copyright: 2005-2023 Pronamic
  * Company: Pronamic
  *
  * @author  Remco Tolsma
@@ -118,6 +118,18 @@ class IssuersField extends GF_Field_Select {
 	}
 
 	/**
+	 * Returns the field's form editor icon.
+	 *
+	 * This could be an icon url or a gform-icon class.
+	 *
+	 * @link https://github.com/pronamic/gravityforms/blob/2.7.3/includes/fields/class-gf-field-address.php#L51-L62
+	 * @return string
+	 */
+	public function get_form_editor_field_icon() {
+		return 'gform-icon--quiz';
+	}
+
+	/**
 	 * Get the iDEAL gateway for this field.
 	 *
 	 * @return null|Gateway
@@ -156,16 +168,12 @@ class IssuersField extends GF_Field_Select {
 				 * gateway and that can result in exceptions. In this case,
 				 * that's no problem and we'll move on to the next
 				 * feed/gateway.
-				 * 
+				 *
 				 * @link https://github.com/pronamic/wp-pronamic-pay-gravityforms/issues/10
 				 */
 				try {
 					$options = $issuer_field->get_options();
 				} catch ( \Exception $e ) {
-					continue;
-				}
-
-				if ( 1 === count( $options ) ) {
 					continue;
 				}
 
@@ -207,7 +215,7 @@ class IssuersField extends GF_Field_Select {
 		 * gateway and that can result in exceptions. In this case,
 		 * that's no problem and we'll move on to the next
 		 * feed/gateway.
-		 * 
+		 *
 		 * @link https://github.com/pronamic/wp-pronamic-pay-gravityforms/issues/10
 		 */
 		try {
@@ -219,6 +227,19 @@ class IssuersField extends GF_Field_Select {
 			$options = $issuer_field->get_flat_options();
 
 			foreach ( $options as $option ) {
+				/**
+				 * Gravity Forms automatically fills an empty value with the label.
+				 * For a first empty choice option, Gravity Forms works with a
+				 * `placeholder` property.
+				 * 
+				 * @link https://github.com/pronamic/wp-pronamic-pay-gravityforms/issues/19
+				 */
+				if ( '' === $option->value ) {
+					$this->placeholder = $option->label;
+
+					continue;
+				}
+
 				$this->choices[] = [
 					'value' => $option->value,
 					'text'  => $option->label,

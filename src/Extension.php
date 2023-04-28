@@ -3,7 +3,7 @@
  * Extension
  *
  * @author    Pronamic <info@pronamic.eu>
- * @copyright 2005-2022 Pronamic
+ * @copyright 2005-2023 Pronamic
  * @license   GPL-3.0-or-later
  * @package   Pronamic\WordPress\Pay\Extensions\GravityForms
  */
@@ -32,7 +32,7 @@ use WP_User;
 /**
  * Title: WordPress pay extension Gravity Forms extension
  * Description:
- * Copyright: 2005-2022 Pronamic
+ * Copyright: 2005-2023 Pronamic
  * Company: Pronamic
  *
  * @author  Remco Tolsma
@@ -91,7 +91,7 @@ class Extension extends AbstractPluginIntegration {
 		\Pronamic\WordPress\GravityFormsNL\Plugin::instance();
 
 		// Post types.
-		$this->payment_form_post_type = new PaymentFormPostType();
+		new PaymentFormPostType();
 
 		// Actions
 		// Initialize hook, Gravity Forms uses the default priority (10).
@@ -110,7 +110,7 @@ class Extension extends AbstractPluginIntegration {
 		}
 
 		// Fields.
-		$this->fields = new Fields();
+		new Fields();
 	}
 
 	/**
@@ -140,7 +140,7 @@ class Extension extends AbstractPluginIntegration {
 		add_filter( 'gform_currencies', [ __CLASS__, 'currencies' ], 10, 1 );
 
 		\add_filter( 'gform_form_args', [ $this, 'maybe_prepopulate_form' ], 10, 1 );
-		\add_filter( 'gform_pre_render', [ $this, 'allow_field_prepopulation' ], 10, 3 );
+		\add_filter( 'gform_pre_render', [ $this, 'allow_field_prepopulation' ], 10, 1 );
 
 		// Register scripts and styles if Gravity Forms No-Conflict Mode is enabled.
 		add_filter( 'gform_noconflict_scripts', [ $this, 'no_conflict_scripts' ] );
@@ -183,14 +183,15 @@ class Extension extends AbstractPluginIntegration {
 	public function admin_enqueue_scripts() {
 		$screen = get_current_screen();
 
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$subview = \array_key_exists( 'subview', $_GET ) ? \sanitize_text_field( \wp_unslash( $_GET['subview'] ) ) : '';
+
 		if (
-			(
-				'pronamic_pay_gf' !== $screen->post_type
-					&&
-				'pronamic_pay' !== \filter_input( \INPUT_GET, 'subview', \FILTER_SANITIZE_STRING )
-			)
-				&&
 			'toplevel_page_gf_edit_forms' !== $screen->id
+				&&
+			'pronamic_pay_gf' !== $screen->post_type
+				&&
+			'pronamic_pay' !== $subview
 		) {
 			return;
 		}
@@ -199,16 +200,16 @@ class Extension extends AbstractPluginIntegration {
 
 		wp_register_style(
 			'pronamic-pay-gravityforms',
-			plugins_url( 'css/admin' . $min . '.css', dirname( __FILE__ ) ),
+			plugins_url( 'css/admin' . $min . '.css', __DIR__ ),
 			[],
-			$this->get_version()
+			\hash_file( 'crc32', \plugin_dir_path( __DIR__ ) . 'css/admin' . $min . '.css' )
 		);
 
 		wp_register_script(
 			'pronamic-pay-gravityforms',
-			plugins_url( 'js/admin' . $min . '.js', dirname( __FILE__ ) ),
+			plugins_url( 'js/admin' . $min . '.js', __DIR__ ),
 			[ 'jquery' ],
-			$this->get_version(),
+			\hash_file( 'crc32', \plugin_dir_path( __DIR__ ) . 'js/admin' . $min . '.js' ),
 			true
 		);
 
@@ -389,9 +390,9 @@ class Extension extends AbstractPluginIntegration {
 		$user = false;
 
 		// Gravity Forms User Registration Add-on.
-		if ( class_exists( 'GF_User_Registration' ) ) {
+		if ( \function_exists( '\gf_user_registration' ) ) {
 			// Version >= 3.
-			$user = gf_user_registration()->get_user_by_entry_id( $lead['id'] );
+			$user = \gf_user_registration()->get_user_by_entry_id( $lead['id'] );
 		} elseif ( class_exists( 'GFUserData' ) ) {
 			$user = GFUserData::get_user_by_entry_id( $lead['id'] );
 		}
@@ -422,9 +423,9 @@ class Extension extends AbstractPluginIntegration {
 		$user = false;
 
 		// Gravity Forms User Registration Add-on.
-		if ( class_exists( 'GF_User_Registration' ) ) {
+		if ( \function_exists( '\gf_user_registration' ) ) {
 			// Version >= 3.
-			$user = gf_user_registration()->get_user_by_entry_id( $lead['id'] );
+			$user = \gf_user_registration()->get_user_by_entry_id( $lead['id'] );
 		} elseif ( class_exists( 'GFUserData' ) ) {
 			$user = GFUserData::get_user_by_entry_id( $lead['id'] );
 		}
@@ -718,54 +719,52 @@ class Extension extends AbstractPluginIntegration {
 		 */
 		$refunded_amount = $payment->get_refunded_amount();
 
-		if ( null === $refunded_amount ) {
-			return;
-		}
-
 		$refunded_amount_value = $refunded_amount->get_value();
 
 		$entry_refunded_amount_value = (float) \gform_get_meta( $entry_id, 'pronamic_pay_refunded_amount' );
 
-		if ( $entry_refunded_amount_value < $refunded_amount_value ) {
-			$diff_amount = $refunded_amount->subtract( new Money( $entry_refunded_amount_value ) );
+		if ( $entry_refunded_amount_value >= $refunded_amount_value ) {
+			return;
+		}
 
-			$result = $this->addon->refund_payment(
-				$entry,
-				[
-					// The Gravity Forms payment add-on callback feature uses the action ID to prevent processing an action twice.
-					'id'             => '',
-					'type'           => 'refund_payment',
-					/**
-					 * Unfortunately we don't have a specific transaction ID for this refund at this point.
-					 *
-					 * @link https://en.wikipedia.org/wiki/%C3%98
-					 * @link https://unicode-table.com/en/2205/
-					 */
-					'transaction_id' => '∅',
-					'entry_id'       => $entry_id,
-					'amount'         => $diff_amount->get_value(),
-					/**
-					 * Override the default Gravity Forms payment status.
-					 *
-					 * @link https://github.com/wp-premium/gravityforms/blob/2.4.20/includes/addon/class-gf-payment-addon.php#L1910-L1912
-					 */
-					'payment_status' => $refunded_amount->get_value() < $total_amount->get_value() ? 'PartlyRefunded' : 'Refunded',
-					/**
-					 * Override the default Gravity Forms payment refund note.
-					 *
-					 * @link https://github.com/wp-premium/gravityforms/blob/2.4.20/includes/addon/class-gf-payment-addon.php#L1920-L1922
-					 */
-					'note'           => \sprintf(
-						/* translators: %s: refunded amount */
-						\__( 'Payment has been (partially) refunded. Amount: %s.', 'pronamic_ideal' ),
-						$diff_amount->format_i18n()
-					),
-				]
-			);
+		$diff_amount = $refunded_amount->subtract( new Money( $entry_refunded_amount_value ) );
 
-			if ( true === $result ) {
-				\gform_update_meta( $entry_id, 'pronamic_pay_refunded_amount', $refunded_amount_value );
-			}
+		$result = $this->addon->refund_payment(
+			$entry,
+			[
+				// The Gravity Forms payment add-on callback feature uses the action ID to prevent processing an action twice.
+				'id'             => '',
+				'type'           => 'refund_payment',
+				/**
+				 * Unfortunately we don't have a specific transaction ID for this refund at this point.
+				 *
+				 * @link https://en.wikipedia.org/wiki/%C3%98
+				 * @link https://unicode-table.com/en/2205/
+				 */
+				'transaction_id' => '∅',
+				'entry_id'       => $entry_id,
+				'amount'         => $diff_amount->get_value(),
+				/**
+				 * Override the default Gravity Forms payment status.
+				 *
+				 * @link https://github.com/wp-premium/gravityforms/blob/2.4.20/includes/addon/class-gf-payment-addon.php#L1910-L1912
+				 */
+				'payment_status' => $refunded_amount->get_value() < $total_amount->get_value() ? 'PartlyRefunded' : 'Refunded',
+				/**
+				 * Override the default Gravity Forms payment refund note.
+				 *
+				 * @link https://github.com/wp-premium/gravityforms/blob/2.4.20/includes/addon/class-gf-payment-addon.php#L1920-L1922
+				 */
+				'note'           => \sprintf(
+					/* translators: %s: refunded amount */
+					\__( 'Payment has been (partially) refunded. Amount: %s.', 'pronamic_ideal' ),
+					$diff_amount->format_i18n()
+				),
+			]
+		);
+
+		if ( true === $result ) {
+			\gform_update_meta( $entry_id, 'pronamic_pay_refunded_amount', $refunded_amount_value );
 		}
 	}
 
@@ -826,7 +825,6 @@ class Extension extends AbstractPluginIntegration {
 				$this->payment_action( 'cancel_subscription', $lead, $action, PaymentStatuses::CANCELLED );
 
 				break;
-			case SubscriptionStatus::EXPIRED:
 			case SubscriptionStatus::COMPLETED:
 				// @todo are we sure an 'expired subscription' is the same as the Pronamic\WordPress\Pay\Core\Statuses::COMPLETED status?
 				$this->payment_action( 'expire_subscription', $lead, $action, PaymentStatuses::EXPIRED );
@@ -1099,15 +1097,19 @@ class Extension extends AbstractPluginIntegration {
 	 * @return void
 	 */
 	public function maybe_display_confirmation() {
-		if ( ! filter_has_var( INPUT_GET, 'pay_confirmation' ) || ! filter_has_var( INPUT_GET, '_wpnonce' ) ) {
+		if ( ! filter_has_var( INPUT_GET, 'pay_confirmation' ) ) {
 			return;
 		}
 
+		// Verify nonce.
+		if ( ! \array_key_exists( '_wpnonce', $_GET ) ) {
+			return;
+		}
+
+		$nonce = \sanitize_text_field( \wp_unslash( $_GET['_wpnonce'] ) );
+
 		$payment_id = filter_input( INPUT_GET, 'pay_confirmation', FILTER_SANITIZE_NUMBER_INT );
 
-		$nonce = filter_input( INPUT_GET, '_wpnonce', FILTER_SANITIZE_STRING );
-
-		// Verify nonce.
 		if ( ! wp_verify_nonce( $nonce, 'gf_confirmation_payment_' . $payment_id ) ) {
 			return;
 		}
@@ -1460,11 +1462,17 @@ class Extension extends AbstractPluginIntegration {
 				},
 				'process_callback'            => function( $entry, $form ) {
 					// @link https://github.com/gravityflow/gravityflow/blob/master/class-gravity-flow.php#L4730-L4746
-					if ( Core_Util::class_method_exists( 'Gravity_Flow', 'get_instance' ) ) {
-						$gravityflow = \Gravity_Flow::get_instance();
-
-						$gravityflow->process_workflow( $form, $entry['id'] );
+					if ( ! \class_exists( '\Gravity_Flow' ) ) {
+						return;
 					}
+
+					if ( ! \method_exists( '\Gravity_Flow', 'get_instance' ) ) {
+						return;
+					}
+
+					$gravityflow = \Gravity_Flow::get_instance();
+
+					$gravityflow->process_workflow( $form, $entry['id'] );
 				},
 			],
 		];
@@ -1613,11 +1621,12 @@ class Extension extends AbstractPluginIntegration {
 	 * @return null|array
 	 */
 	public function get_payment_retry_entry() {
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Using payment key instead of nonce.
 		if ( ! \filter_has_var( \INPUT_GET, 'pay_again' ) ) {
 			return null;
 		}
 
-		if ( ! \filter_has_var( \INPUT_GET, 'key' ) ) {
+		if ( ! \array_key_exists( 'key', $_GET ) ) {
 			return null;
 		}
 
@@ -1636,15 +1645,17 @@ class Extension extends AbstractPluginIntegration {
 		}
 
 		// Check if payment key is valid.
-		$key = filter_input( INPUT_GET, 'key', FILTER_SANITIZE_STRING );
-
 		if ( empty( $payment->key ) ) {
 			return null;
 		}
 
-		if ( $key !== $payment->key ) {
+		$key = \sanitize_text_field( \wp_unslash( $_GET['key'] ) );
+
+		if ( $payment->key !== $key ) {
 			return null;
 		}
+
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
 
 		// Get entry.
 		$entry_id = $payment->get_source_id();

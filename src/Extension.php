@@ -561,6 +561,10 @@ class Extension extends AbstractPluginIntegration {
 						],
 						$lead['source_url']
 					);
+
+					$anchor = GFFormDisplay::get_anchor( GFAPI::get_form( $lead['form_id'] ), false );
+
+					$url .= $anchor['id'];
 				}
 			}
 		}
@@ -1202,9 +1206,9 @@ class Extension extends AbstractPluginIntegration {
 
 		$subscription_id = gform_get_meta( rgar( $entry, 'id' ), 'pronamic_subscription_id' );
 
-		if ( ! empty( $subscription_id ) ) {
-			$subscription = get_pronamic_subscription( $subscription_id );
+		$subscription = empty( $subscription_id ) ? null : \get_pronamic_subscription( $subscription_id );
 
+		if ( null !== $subscription ) {
 			$next_payment_date = $subscription->get_next_payment_date();
 
 			if ( $next_payment_date ) {
@@ -1224,17 +1228,20 @@ class Extension extends AbstractPluginIntegration {
 			$subscription_renew_url  = $subscription->get_renewal_url();
 		}
 
-		$payment_id              = gform_get_meta( rgar( $entry, 'id' ), 'pronamic_payment_id' );
-		$subscription_payment_id = gform_get_meta( rgar( $entry, 'id' ), 'pronamic_subscription_payment_id' );
+		$payment_id              = (string) gform_get_meta( rgar( $entry, 'id' ), 'pronamic_payment_id' );
+		$subscription_payment_id = (string) gform_get_meta( rgar( $entry, 'id' ), 'pronamic_subscription_payment_id' );
 
 		/**
 		 * Bank transfer recipient details.
+		 * 
+		 * Use bank transfer details from last subscription payment if available.
 		 */
-		// Use bank transfer details from last subscription payment if available.
-		$payment = \get_pronamic_payment( $subscription_payment_id );
+		$payment = null;
+
+		$payment = ( '' === $subscription_payment_id ) ? $payment : \get_pronamic_payment( $subscription_payment_id );
 
 		if ( null === $payment ) {
-			$payment = \get_pronamic_payment( $payment_id );
+			$payment = ( '' === $payment_id ) ? $payment : \get_pronamic_payment( $payment_id );
 		}
 
 		$bank_transfer_recipient_reference      = '';
@@ -1297,6 +1304,7 @@ class Extension extends AbstractPluginIntegration {
 			'{knitpay_payment_bank_transfer_recipient_city}' => $bank_transfer_recipient_city,
 			'{knitpay_payment_bank_transfer_recipient_country}' => $bank_transfer_recipient_country,
 			'{knitpay_payment_bank_transfer_recipient_account_number}' => $bank_transfer_recipient_account_number,
+			'{knitpay_subscription_id}'           => $subscription_id,
 			'{knitpay_subscription_payment_id}'   => $subscription_payment_id,
 			'{knitpay_subscription_amount}'       => $subscription_amount,
 			'{knitpay_subscription_cancel_url}'   => $subscription_cancel_url,
@@ -1491,6 +1499,11 @@ class Extension extends AbstractPluginIntegration {
 
 				$actions[ $slug ]['meta_key_suffix']             = $slug;
 				$actions[ $slug ]['delayed_payment_integration'] = true;
+				$actions[ $slug ]['label']                       = \sprintf(
+					/* translators: %s: plugin title */
+					\__( 'Process %s feeds', 'pronamic_ideal' ),
+					$addon->plugin_page_title()
+				);
 
 				if ( isset( $addon->delayed_payment_integration['option_label'] ) ) {
 					$actions[ $slug ]['label'] = $addon->delayed_payment_integration['option_label'];

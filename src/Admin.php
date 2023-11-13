@@ -25,7 +25,7 @@ use RGFormsModel;
 class Admin {
 	/**
 	 * Bootstrap.
-	 * 
+	 *
 	 * @return void
 	 */
 	public static function bootstrap() {
@@ -44,7 +44,7 @@ class Admin {
 
 	/**
 	 * Admin initialize.
-	 * 
+	 *
 	 * @return void
 	 */
 	public static function admin_init() {
@@ -168,6 +168,11 @@ class Admin {
 		];
 
 		// Subscription.
+		$merge_tags[] = [
+			'label' => __( 'Knit Pay Subscription ID', 'pronamic_ideal' ),
+			'tag'   => '{knitpay_subscription_id}',
+		];
+
 		$merge_tags[] = [
 			'label' => __( 'Knit Pay Subscription Payment ID', 'pronamic_ideal' ),
 			'tag'   => '{knitpay_subscription_payment_id}',

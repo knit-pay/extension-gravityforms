@@ -7,6 +7,50 @@ This projects adheres to [Semantic Versioning](http://semver.org/) and [Keep a C
 ## [Unreleased][unreleased]
 -
 
+## [4.5.8] - 2023-11-06
+
+### Commits
+
+- Reduce `get_pronamic_payment()` calls. ([49ced02](https://github.com/pronamic/wp-pronamic-pay-gravityforms/commit/49ced0204791fbcf05425eafa00b6cea6090c0ae))
+
+Full set of changes: [`4.5.7...4.5.8`][4.5.8]
+
+[4.5.8]: https://github.com/pronamic/wp-pronamic-pay-gravityforms/compare/v4.5.7...v4.5.8
+
+## [4.5.7] - 2023-10-30
+
+### Commits
+
+- Set default label for delayed actions. ([7dc44ae](https://github.com/pronamic/wp-pronamic-pay-gravityforms/commit/7dc44ae93d891b15aca46b2dafc7646c29b5a37e))
+- Check if subscription is available, fixes #35. ([9682673](https://github.com/pronamic/wp-pronamic-pay-gravityforms/commit/9682673ff1126e0c6a085fe2973c2658172c7b69))
+
+Full set of changes: [`4.5.6...4.5.7`][4.5.7]
+
+[4.5.7]: https://github.com/pronamic/wp-pronamic-pay-gravityforms/compare/v4.5.6...v4.5.7
+
+## [4.5.6] - 2023-07-12
+
+### Commits
+
+- Added label for subscription ID merge tag. ([22466f0](https://github.com/pronamic/wp-pronamic-pay-gravityforms/commit/22466f07a111097b45d10933e2cbf38132dc1b34))
+- Added merge tag `{pronamic_subscription_id}`. ([9d25939](https://github.com/pronamic/wp-pronamic-pay-gravityforms/commit/9d25939eb1e31d9aa75eaaa4a99a6ecd16a842be))
+
+Full set of changes: [`4.5.5...4.5.6`][4.5.6]
+
+[4.5.6]: https://github.com/pronamic/wp-pronamic-pay-gravityforms/compare/v4.5.5...v4.5.6
+
+## [4.5.5] - 2023-06-01
+
+### Commits
+
+- Switch from `pronamic/wp-deployer` to `pronamic/pronamic-cli`. ([a2363f9](https://github.com/pronamic/wp-pronamic-pay-gravityforms/commit/a2363f9905b39c539c0be7466caebe8a1faf5514))
+- Added support for `gform_confirmation_anchor`. ([ae07289](https://github.com/pronamic/wp-pronamic-pay-gravityforms/commit/ae07289b7be7bd791c67f75d08b9d68a9f6973ec))
+- Updated .gitattributes ([89b6396](https://github.com/pronamic/wp-pronamic-pay-gravityforms/commit/89b6396e6e6401c06fa3f9eda661a88d6542c20e))
+
+Full set of changes: [`4.5.4...4.5.5`][4.5.5]
+
+[4.5.5]: https://github.com/pronamic/wp-pronamic-pay-gravityforms/compare/v4.5.4...v4.5.5
+
 ## [4.5.4] - 2023-03-30
 
 ### Commits

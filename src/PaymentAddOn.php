@@ -234,9 +234,11 @@ class PaymentAddOn extends GFPaymentAddOn {
 
 		if ( ! \is_readable( $file ) ) {
 			throw new \Exception(
-				\sprintf(
-					'Could not read WordPress admin menu icon from file: %s.',
-					$file
+				\esc_html(
+					\sprintf(
+						'Could not read WordPress admin menu icon from file: %s.',
+						$file
+					) 
 				)
 			);
 		}
@@ -245,9 +247,11 @@ class PaymentAddOn extends GFPaymentAddOn {
 
 		if ( false === $svg ) {
 			throw new \Exception(
-				\sprintf(
-					'Could not read WordPress admin menu icon from file: %s.',
-					$file
+				\esc_html(
+					\sprintf(
+						'Could not read WordPress admin menu icon from file: %s.',
+						$file
+					) 
 				)
 			);
 		}
@@ -401,7 +405,7 @@ class PaymentAddOn extends GFPaymentAddOn {
 			return false;
 		}
 
-		$feed = new PayFeed( $id );
+		$feed = FeedsDB::get_feed( $id );
 
 		$post = array_merge(
 			$post,
@@ -648,7 +652,7 @@ class PaymentAddOn extends GFPaymentAddOn {
 	 * @param int $feed_id Feed ID.
 	 */
 	public function delete_feed( $feed_id ) {
-		wp_delete_post( $feed_id );
+		FeedsDB::delete_feed( $feed_id );
 	}
 
 	/**
@@ -664,7 +668,7 @@ class PaymentAddOn extends GFPaymentAddOn {
 		$feeds = $this->get_feeds( $form_id );
 
 		foreach ( $feeds as $feed ) {
-			$this->get_feed( $feed['ID'] );
+			$this->delete_feed( $feed['ID'] );
 		}
 	}
 }

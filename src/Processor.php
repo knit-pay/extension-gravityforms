@@ -3,7 +3,7 @@
  * Processor
  *
  * @author    Pronamic <info@pronamic.eu>
- * @copyright 2005-2023 Pronamic
+ * @copyright 2005-2024 Pronamic
  * @license   GPL-3.0-or-later
  * @package   Pronamic\WordPress\Pay\Extensions\GravityForms
  */
@@ -12,6 +12,7 @@ namespace Pronamic\WordPress\Pay\Extensions\GravityForms;
 
 use GFCommon;
 use Pronamic\WordPress\Number\Number;
+use Pronamic\WordPress\Number\Parser as NumberParser;
 use Pronamic\WordPress\Money\Currency;
 use Pronamic\WordPress\Money\Money;
 use Pronamic\WordPress\Pay\AbstractGatewayIntegration;
@@ -33,7 +34,7 @@ use Pronamic\WordPress\Pay\Subscriptions\SubscriptionPhase;
 /**
  * Title: WordPress pay extension Gravity Forms processor
  * Description:
- * Copyright: 2005-2023 Pronamic
+ * Copyright: 2005-2024 Pronamic
  * Company: Pronamic
  *
  * @author  Remco Tolsma
@@ -356,9 +357,24 @@ class Processor {
 						$line->set_unit_price( new Money( $value, $currency ) );
 
 						if ( array_key_exists( 'quantity', $product ) ) {
-							$quantity = Number::from_mixed( $product['quantity'] );
+							try {
+								$parser = new NumberParser();
 
-							$value = $value->multiply( $quantity );
+								$quantity = $parser->parse( $product['quantity'] );
+
+								$value = $value->multiply( $quantity );
+							} catch ( \Exception $exception ) {
+								$exception = new \Exception(
+									\sprintf(
+										'Couldn’t parse Gravity Forms product field `%s` quantity to a number.',
+										\esc_html( $key )
+									),
+									0,
+									$exception
+								);
+
+								throw $exception;
+							}
 						}
 
 						$line->set_total_amount( new Money( $value, $currency ) );

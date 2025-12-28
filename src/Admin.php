@@ -3,7 +3,7 @@
  * Admin
  *
  * @author    Pronamic <info@pronamic.eu>
- * @copyright 2005-2023 Pronamic
+ * @copyright 2005-2024 Pronamic
  * @license   GPL-3.0-or-later
  * @package   Pronamic\WordPress\Pay\Extensions\GravityForms
  */
@@ -15,7 +15,7 @@ use RGFormsModel;
 /**
  * Title: WordPress pay extension Gravity Forms admin
  * Description:
- * Copyright: 2005-2023 Pronamic
+ * Copyright: 2005-2024 Pronamic
  * Company: Pronamic
  *
  * @author  Remco Tolsma
@@ -167,6 +167,16 @@ class Admin {
 			'tag'   => '{knitpay_payment_bank_transfer_recipient_account_number}',
 		];
 
+		$merge_tags[] = [
+			'label' => __( 'Pronamic consumer bank account name', 'pronamic_ideal' ),
+			'tag'   => '{pronamic_payment_consumer_bank_account_name}',
+		];
+
+		$merge_tags[] = [
+			'label' => __( 'Pronamic consumer IBAN', 'pronamic_ideal' ),
+			'tag'   => '{pronamic_payment_consumer_iban}',
+		];
+
 		// Subscription.
 		$merge_tags[] = [
 			'label' => __( 'Knit Pay Subscription ID', 'pronamic_ideal' ),
@@ -202,33 +212,38 @@ class Admin {
 	}
 
 	/**
-	 * Maybe redirect to Gravity Forms entry
+	 * Maybe redirect to Gravity Forms entry.
+	 *
+	 * @return void
 	 */
 	public static function maybe_redirect_to_entry() {
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$lead_id = \array_key_exists( 'pronamic_gf_lid', $_GET ) ? \sanitize_text_field( \wp_unslash( $_GET['pronamic_gf_lid'] ) ) : null;
-
-		if ( null === $lead_id ) {
+		if ( ! \array_key_exists( 'pronamic_gf_lid', $_GET ) ) {
 			return;
 		}
 
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$lead_id = \sanitize_text_field( \wp_unslash( $_GET['pronamic_gf_lid'] ) );
+
 		$lead = RGFormsModel::get_lead( $lead_id );
 
-		if ( ! empty( $lead ) ) {
-			$url = add_query_arg(
-				[
-					'page' => 'gf_entries',
-					'view' => 'entry',
-					'id'   => $lead['form_id'],
-					'lid'  => $lead_id,
-				],
-				admin_url( 'admin.php' )
-			);
-
-			wp_safe_redirect( $url );
-
-			exit;
+		if ( false === $lead ) {
+			\wp_die( \esc_html__( 'The requested Gravity Forms entry could not be found.', 'pronamic_ideal' ) );
 		}
+
+		$url = \add_query_arg(
+			[
+				'page' => 'gf_entries',
+				'view' => 'entry',
+				'id'   => $lead['form_id'],
+				'lid'  => $lead_id,
+			],
+			admin_url( 'admin.php' )
+		);
+
+		wp_safe_redirect( $url );
+
+		exit;
 	}
 
 	/**

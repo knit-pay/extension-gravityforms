@@ -3,7 +3,7 @@
  * Issuers field
  *
  * @author    Pronamic <info@pronamic.eu>
- * @copyright 2005-2023 Pronamic
+ * @copyright 2005-2024 Pronamic
  * @license   GPL-3.0-or-later
  * @package   Pronamic\WordPress\Pay\Extensions\GravityForms
  */
@@ -11,15 +11,17 @@
 namespace Pronamic\WordPress\Pay\Extensions\GravityForms;
 
 use GF_Field_Select;
-use Pronamic\WordPress\Pay\Core\Gateway;
-use Pronamic\WordPress\Pay\Fields\IDealIssuerSelectField;
+use Pronamic\IDealIssuers\IDealIssuerCode;
+use Pronamic\IDealIssuers\IDealIssuerService;
 use Pronamic\WordPress\Pay\Core\PaymentMethods;
+use Pronamic\WordPress\Pay\Fields\IDealIssuerSelectField;
+use Pronamic\WordPress\Pay\Fields\SelectFieldOption;
 use Pronamic\WordPress\Pay\Plugin;
 
 /**
  * Title: WordPress pay extension Gravity Forms issuers field
  * Description:
- * Copyright: 2005-2023 Pronamic
+ * Copyright: 2005-2024 Pronamic
  * Company: Pronamic
  *
  * @author  Remco Tolsma
@@ -130,61 +132,6 @@ class IssuersField extends GF_Field_Select {
 	}
 
 	/**
-	 * Get the iDEAL gateway for this field.
-	 *
-	 * @return null|Gateway
-	 */
-	private function get_gateway() {
-		$gateway = null;
-
-		if ( isset( $this->pronamicPayConfigId ) && ! empty( $this->pronamicPayConfigId ) ) {
-			$gateway = Plugin::get_gateway( $this->pronamicPayConfigId );
-		}
-
-		if ( ! $gateway ) {
-			$feeds = FeedsDB::get_feeds_by_form_id( $this->formId );
-
-			foreach ( $feeds as $feed ) {
-				// Check if feed is active.
-				if ( '0' === get_post_meta( $feed->id, '_pronamic_pay_gf_feed_active', true ) ) {
-					continue;
-				}
-
-				$gateway = Plugin::get_gateway( $feed->config_id );
-
-				if ( null === $gateway ) {
-					continue;
-				}
-
-				// Always use iDEAL payment method for issuer field.
-				$issuer_field = $gateway->first_payment_method_field( PaymentMethods::IDEAL, IDealIssuerSelectField::class );
-
-				if ( null === $issuer_field ) {
-					continue;
-				}
-
-				/**
-				 * The iDEAL issuer field options can be requested from the
-				 * gateway and that can result in exceptions. In this case,
-				 * that's no problem and we'll move on to the next
-				 * feed/gateway.
-				 *
-				 * @link https://github.com/pronamic/wp-pronamic-pay-gravityforms/issues/10
-				 */
-				try {
-					$options = $issuer_field->get_options();
-				} catch ( \Exception $e ) {
-					continue;
-				}
-
-				return $gateway;
-			}
-		}
-
-		return $gateway;
-	}
-
-	/**
 	 * Set the issuer choices for this issuers field.
 	 *
 	 * @param int $form_id Gravity Forms form ID.
@@ -197,57 +144,145 @@ class IssuersField extends GF_Field_Select {
 			return;
 		}
 
-		$gateway = $this->get_gateway();
+		$options = $this->get_ideal_issuer_select_field_options();
 
-		if ( ! $gateway ) {
-			return;
-		}
-
-		// Always use iDEAL payment method for issuer field.
-		$issuer_field = $gateway->first_payment_method_field( PaymentMethods::IDEAL, IDealIssuerSelectField::class );
-
-		if ( null === $issuer_field ) {
-			return;
-		}
-
-		/**
-		 * The iDEAL issuer field options can be requested from the
-		 * gateway and that can result in exceptions. In this case,
-		 * that's no problem and we'll move on to the next
-		 * feed/gateway.
-		 *
-		 * @link https://github.com/pronamic/wp-pronamic-pay-gravityforms/issues/10
-		 */
-		try {
-			/**
-			 * Gravity Forms has no support for <optgroup>  elements.
+		if ( null === $options ) {
+			/*
+			 * When an issuers field is marked as required and there are no choices,
+			 * validation of the form submission will fail. However, a hosted payment
+			 * page of the payment gateway might still be able to process the payment.
+			 * Therefore, we fall back to a static list of iDEAL issuers in these cases.
 			 *
-			 * @link https://github.com/pronamic/wp-pronamic-pay/issues/154#issuecomment-1183309350
+			 * @link https://github.com/pronamic/wp-pronamic-pay-gravityforms/issues/47
 			 */
-			$options = $issuer_field->get_flat_options();
+			$ideal_issuer_service = new IDealIssuerService();
 
-			foreach ( $options as $option ) {
-				/**
-				 * Gravity Forms automatically fills an empty value with the label.
-				 * For a first empty choice option, Gravity Forms works with a
-				 * `placeholder` property.
-				 * 
-				 * @link https://github.com/pronamic/wp-pronamic-pay-gravityforms/issues/19
-				 */
-				if ( '' === $option->value ) {
-					$this->placeholder = $option->label;
+			$issuers = $ideal_issuer_service->get_issuers();
 
-					continue;
-				}
+			$options = [];
 
-				$this->choices[] = [
-					'value' => $option->value,
-					'text'  => $option->label,
-				];
+			foreach ( $issuers as $issuer ) {
+				$options[] = new SelectFieldOption( $issuer->code, $issuer->name );
 			}
-		} catch ( \Exception $e ) {
-			return;
 		}
+
+		foreach ( $options as $option ) {
+			/**
+			 * Gravity Forms automatically fills an empty value with the label.
+			 * For a first empty choice option, Gravity Forms works with a
+			 * `placeholder` property.
+			 *
+			 * @link https://github.com/pronamic/wp-pronamic-pay-gravityforms/issues/19
+			 */
+			if ( '' === $option->value ) {
+				$this->placeholder = $option->label;
+
+				continue;
+			}
+
+			$this->choices[] = [
+				'value' => $option->value,
+				'text'  => $option->label,
+			];
+		}
+	}
+
+	/**
+	 * Get the iDEAL issuer select field options from gateway for this field.
+	 *
+	 * @return SelectFieldOption[]|null
+	 */
+	private function get_ideal_issuer_select_field_options() {
+		$config_ids = null;
+
+		if ( isset( $this->pronamicPayConfigId ) && ! empty( $this->pronamicPayConfigId ) ) {
+			$config_ids = [
+				$this->pronamicPayConfigId,
+			];
+		}
+
+		if ( null === $config_ids ) {
+			$feeds = \array_filter(
+				FeedsDB::get_feeds_by_form_id( $this->formId ),
+				function ( $feed ) {
+					// Check if feed is active.
+					return '0' !== \get_post_meta( $feed->id, '_pronamic_pay_gf_feed_active', true );
+				}
+			);
+
+			$config_ids = \wp_list_pluck( $feeds, 'config_id' );
+		}
+
+		foreach ( $config_ids as $config_id ) {
+			$gateway = Plugin::get_gateway( $config_id );
+
+			if ( null === $gateway ) {
+				continue;
+			}
+
+			$issuer_field = $gateway->first_payment_method_field( PaymentMethods::IDEAL, IDealIssuerSelectField::class );
+
+			if ( null === $issuer_field ) {
+				continue;
+			}
+
+			/**
+			 * Exceptions can occur when requesting iDEAL issuer field options,
+			 * but we'll just move on to the next feed/gateway.
+			 *
+			 * @link https://github.com/pronamic/wp-pronamic-pay-gravityforms/issues/10
+			 */
+			try {
+				/**
+				 * Gravity Forms has no support for <optgroup>  elements.
+				 *
+				 * @link https://github.com/pronamic/wp-pronamic-pay/issues/154#issuecomment-1183309350
+				 */
+				$options = $issuer_field->get_flat_options();
+			} catch ( \Exception $e ) {
+				continue;
+			}
+
+			return $options;
+		}
+
+		return null;
+	}
+
+	/**
+	 * Get iDEAL issuer code from label.
+	 *
+	 * @param string $label Label.
+	 * @return string|null
+	 */
+	private function get_ideal_issuer_code_from_label( $label ) {
+		$label = \strtolower( $label );
+
+		$map = [
+			'abn'       => IDealIssuerCode::ABNANL2A,
+			'asn'       => IDealIssuerCode::ASNBNL21,
+			'bunq'      => IDealIssuerCode::BUNQNL2A,
+			'ing'       => IDealIssuerCode::INGBNL2A,
+			'knab'      => IDealIssuerCode::KNABNL2H,
+			'n26'       => IDealIssuerCode::NTSBDEB1,
+			'nationale' => IDealIssuerCode::NNBANL2G,
+			'nn'        => IDealIssuerCode::NNBANL2G,
+			'rabobank'  => IDealIssuerCode::RABONL2U,
+			'regio'     => IDealIssuerCode::RBRBNL21,
+			'revolut'   => IDealIssuerCode::REVOLT21,
+			'sns'       => IDealIssuerCode::SNSBNL2A,
+			'triodos'   => IDealIssuerCode::TRIONL2U,
+			'lanschot'  => IDealIssuerCode::FVLBNL22,
+			'yoursafe'  => IDealIssuerCode::BITSNL2A,
+		];
+
+		foreach ( $map as $needle => $ideal_issuer_code ) {
+			if ( \str_contains( $label, $needle ) ) {
+				return $ideal_issuer_code;
+			}
+		}
+
+		return null;
 	}
 
 	/**
@@ -285,28 +320,30 @@ class IssuersField extends GF_Field_Select {
 				<ul class="gfield_radio input_<?php echo esc_attr( $this->formId ); ?>_<?php echo esc_attr( $this->id ); ?>">
 					<?php
 
-					// Icon filename replacements.
-					$replacements = [
-						' bankiers' => '',
-						' '         => '-',
-					];
-
 					// Icon file and size.
 					switch ( $this->pronamicPayDisplayMode ) {
 						case 'icons-24':
-							$dimensions = [ 24, 24 ];
+							$display_width   = 24;
+							$display_height  = 24;
+							$image_variation = 'icon-512x512.svg';
 
 							break;
 						case 'icons-64':
-							$dimensions = [ 64, 64 ];
+							$display_width   = 64;
+							$display_height  = 64;
+							$image_variation = 'icon-512x512.svg';
 
 							break;
 						case 'icons-125':
 						default:
-							$dimensions = [ 125, 60 ];
+							$display_width   = 125;
+							$display_height  = 70;
+							$image_variation = '640x360.svg';
 					}
 
-					$images_path = plugin_dir_path( Plugin::$file ) . 'images/';
+					$ideal_issuer_service = new IDealIssuerService();
+
+					$ideal_issuers = $ideal_issuer_service->get_issuers();
 
 					// Loop issuers.
 					foreach ( $this->choices as $choice ) {
@@ -315,36 +352,34 @@ class IssuersField extends GF_Field_Select {
 							continue;
 						}
 
-						// Icon file name.
-						$issuer = strtr( strtolower( $choice['text'] ), $replacements );
+						$label = $choice['text'];
 
-						if ( false !== stripos( $issuer, 'test' ) || false !== stripos( $issuer, 'simulation' ) ) {
-							$issuer = 'test';
-						}
-
-						if ( ! is_dir( $images_path . $issuer ) && is_dir( $images_path . $issuer . '-bank' ) ) {
-							$issuer .= '-bank';
-						}
-
-						$icon_path = sprintf(
-							'%s/icon-%s.png',
-							$issuer,
-							implode( 'x', $dimensions )
-						);
-
-						// Radio input.
 						$label_content = sprintf( '<span>%s</span>', esc_html( $choice['text'] ) );
 
-						if ( file_exists( plugin_dir_path( Plugin::$file ) . 'images/' . $icon_path ) ) {
-							$icon_url = plugins_url( 'images/' . $icon_path, Plugin::$file );
+						$ideal_issuer = null;
 
-							$label_content = sprintf(
-								'<img src="%2$s" alt="%1$s" srcset="%3$s 2x, %4$s 3x, %5$s 4x" /><span>%1$s</span>',
-								esc_html( $choice['text'] ),
-								esc_url( $icon_url ),
-								esc_url( str_replace( '.png', '@2x.png', $icon_url ) ),
-								esc_url( str_replace( '.png', '@3x.png', $icon_url ) ),
-								esc_url( str_replace( '.png', '@4x.png', $icon_url ) )
+						$ideal_issuer_code = $this->get_ideal_issuer_code_from_label( $label );
+
+						if ( null !== $ideal_issuer_code && \array_key_exists( $ideal_issuer_code->value, $ideal_issuers->items ) ) {
+							$ideal_issuer = $ideal_issuers->items[ $ideal_issuer_code->value ];
+						}
+
+						$image_path = null;
+
+						if ( null !== $ideal_issuer && \array_key_exists( $image_variation, $ideal_issuer->images ) ) {
+							$image_path = $ideal_issuer->images[ $image_variation ];
+						}
+
+						if ( null !== $image_path && \file_exists( $image_path ) ) {
+							$image_url = \plugins_url( \basename( $image_path ), $image_path );
+
+							$label_content = \sprintf(
+								'<img src="%s" alt="%s" width="%s" height="%s" /><span>%s</span>',
+								\esc_url( $image_url ),
+								\esc_attr( $choice['text'] ),
+								\esc_attr( $display_width ),
+								\esc_attr( $display_height ),
+								\esc_html( $choice['text'] )
 							);
 						}
 
@@ -373,9 +408,6 @@ class IssuersField extends GF_Field_Select {
 
 				.gform_wrapper <?php echo esc_html( $field_css_id ); ?> .gfield_radio li img {
 					display: block;
-
-					width: <?php echo esc_html( $dimensions[0] ); ?>px;
-					height: <?php echo esc_html( $dimensions[1] ); ?>px;
 				}
 
 				.gform_wrapper <?php echo esc_html( $field_css_id ); ?> .gfield_radio li label {
@@ -499,8 +531,6 @@ class IssuersField extends GF_Field_Select {
 				.gform_wrapper <?php echo esc_html( $field_css_id ); ?> .gfield_radio li label {
 					display: block;
 
-					height: 68px;
-
 					padding: 3px;
 
 					border: 1px solid #bbb;
@@ -563,8 +593,10 @@ class IssuersField extends GF_Field_Select {
 				$input = $link . $input;
 			}
 
-			if ( ! empty( $feeds ) && empty( $this->choices ) ) {
-				// If there are feeds and no choices it's very likely this field is no supported by the gateway.
+			$options = $this->get_ideal_issuer_select_field_options();
+
+			if ( ! empty( $feeds ) && null === $options ) {
+				// If there are feeds but no gateway issuer options, it's very likely this field is not supported by the gateway.
 				$error = sprintf(
 					'<p class="pronamic-pay-error"><strong>%s</strong><br><em>%s</em></p>',
 					__( 'This field is not supported by your payment gateway.', 'pronamic_ideal' ),

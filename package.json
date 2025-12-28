@@ -1,6 +1,6 @@
 {
   "name": "gravityforms",
-  "version": "4.6.1",
+  "version": "4.10.1",
   "description": "Gravity Forms driver for the WordPress payment processing library.",
   "repository": {
     "type": "git",
@@ -35,13 +35,13 @@
     "last 2 versions"
   ],
   "devDependencies": {
-    "@wordpress/env": "^9.6.0",
-    "autoprefixer": "^9.8.8",
-    "eslint": "^8.31.0",
-    "eslint-plugin-json": "^3.1.0",
-    "grunt": "^1.5.3",
+    "@wordpress/env": "^10.0.0",
+    "autoprefixer": "^10.4.19",
+    "eslint": "^9.4.0",
+    "eslint-plugin-json": "^4.0.0",
+    "grunt": "^1.6.1",
     "grunt-contrib-compass": "^1.1.1",
-    "grunt-contrib-cssmin": "^4.0.0",
+    "grunt-contrib-cssmin": "^5.0.0",
     "grunt-contrib-jshint": "^3.2.0",
     "grunt-contrib-uglify": "^5.2.2",
     "grunt-postcss": "^0.9.0",

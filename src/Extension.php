@@ -3,7 +3,7 @@
  * Extension
  *
  * @author    Pronamic <info@pronamic.eu>
- * @copyright 2005-2023 Pronamic
+ * @copyright 2005-2024 Pronamic
  * @license   GPL-3.0-or-later
  * @package   Pronamic\WordPress\Pay\Extensions\GravityForms
  */
@@ -32,7 +32,7 @@ use WP_User;
 /**
  * Title: WordPress pay extension Gravity Forms extension
  * Description:
- * Copyright: 2005-2023 Pronamic
+ * Copyright: 2005-2024 Pronamic
  * Company: Pronamic
  *
  * @author  Remco Tolsma
@@ -275,10 +275,8 @@ class Extension extends AbstractPluginIntegration {
 	public function source_text( $text, Payment $payment ) {
 		$text = __( 'Gravity Forms', 'pronamic_ideal' ) . '<br />';
 
-		$entry = $this->is_active() ? RGFormsModel::get_lead( $payment->get_source_id() ) : false;
-
 		$text .= sprintf(
-			false === $entry ? '%2$s' : '<a href="%1$s">%2$s</a>',
+			'<a href="%1$s">%2$s</a>',
 			add_query_arg( [ 'pronamic_gf_lid' => $payment->get_source_id() ], admin_url( 'admin.php' ) ),
 			/* translators: %s: source id  */
 			sprintf( __( 'Entry #%s', 'pronamic_ideal' ), $payment->get_source_id() )
@@ -308,18 +306,7 @@ class Extension extends AbstractPluginIntegration {
 	 * @return string
 	 */
 	public function source_url( $url, Payment $payment ) {
-		$entry = RGFormsModel::get_lead( $payment->get_source_id() );
-
-		if ( false !== $entry ) {
-			$url = add_query_arg(
-				[
-					'pronamic_gf_lid' => $payment->get_source_id(),
-				],
-				admin_url( 'admin.php' )
-			);
-		}
-
-		return $url;
+		return \add_query_arg( 'pronamic_gf_lid', $payment->get_source_id(), \admin_url( 'admin.php' ) );
 	}
 
 	/**
@@ -333,10 +320,8 @@ class Extension extends AbstractPluginIntegration {
 	public function subscription_source_text( $text, Subscription $subscription ) {
 		$text = __( 'Gravity Forms', 'pronamic_ideal' ) . '<br />';
 
-		$entry = $this->is_active() ? RGFormsModel::get_lead( $subscription->get_source_id() ) : false;
-
 		$text .= sprintf(
-			false === $entry ? '%2$s' : '<a href="%1$s">%2$s</a>',
+			'<a href="%1$s">%2$s</a>',
 			add_query_arg( [ 'pronamic_gf_lid' => $subscription->get_source_id() ], admin_url( 'admin.php' ) ),
 			/* translators: %s: source id  */
 			sprintf( __( 'Entry #%s', 'pronamic_ideal' ), $subscription->get_source_id() )
@@ -366,18 +351,7 @@ class Extension extends AbstractPluginIntegration {
 	 * @return string
 	 */
 	public function subscription_source_url( $url, Subscription $subscription ) {
-		$entry = RGFormsModel::get_lead( $subscription->get_source_id() );
-
-		if ( false !== $entry ) {
-			$url = add_query_arg(
-				[
-					'pronamic_gf_lid' => $subscription->get_source_id(),
-				],
-				admin_url( 'admin.php' )
-			);
-		}
-
-		return $url;
+		return \add_query_arg( 'pronamic_gf_lid', $subscription->get_source_id(), \admin_url( 'admin.php' ) );
 	}
 
 	/**
@@ -557,7 +531,7 @@ class Extension extends AbstractPluginIntegration {
 					$url = add_query_arg(
 						[
 							'pay_confirmation' => $payment->get_id(),
-							'_wpnonce'         => wp_create_nonce( 'gf_confirmation_payment_' . $payment->get_id() ),
+							'hash'             => \wp_hash( $payment->get_id() ),
 						],
 						$lead['source_url']
 					);
@@ -1101,20 +1075,23 @@ class Extension extends AbstractPluginIntegration {
 	 * @return void
 	 */
 	public function maybe_display_confirmation() {
-		if ( ! filter_has_var( INPUT_GET, 'pay_confirmation' ) ) {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( ! \array_key_exists( 'pay_confirmation', $_GET ) ) {
 			return;
 		}
 
-		// Verify nonce.
-		if ( ! \array_key_exists( '_wpnonce', $_GET ) ) {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$payment_id = (int) \sanitize_text_field( \wp_unslash( $_GET['pay_confirmation'] ) );
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( ! \array_key_exists( 'hash', $_GET ) ) {
 			return;
 		}
 
-		$nonce = \sanitize_text_field( \wp_unslash( $_GET['_wpnonce'] ) );
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$hash = \sanitize_text_field( \wp_unslash( $_GET['hash'] ) );
 
-		$payment_id = filter_input( INPUT_GET, 'pay_confirmation', FILTER_SANITIZE_NUMBER_INT );
-
-		if ( ! wp_verify_nonce( $nonce, 'gf_confirmation_payment_' . $payment_id ) ) {
+		if ( \wp_hash( $payment_id ) !== $hash ) {
 			return;
 		}
 
@@ -1233,7 +1210,7 @@ class Extension extends AbstractPluginIntegration {
 
 		/**
 		 * Bank transfer recipient details.
-		 * 
+		 *
 		 * Use bank transfer details from last subscription payment if available.
 		 */
 		$payment = null;
@@ -1275,6 +1252,21 @@ class Extension extends AbstractPluginIntegration {
 			}
 		}
 
+		/**
+		 * Consumer bank account details.
+		 */
+		$consumer_bank_account_name = '';
+		$consumer_iban              = '';
+
+		if ( null !== $payment ) {
+			$consumer_bank_details = $payment->get_consumer_bank_details();
+
+			if ( null !== $consumer_bank_details ) {
+				$consumer_bank_account_name = \strval( $consumer_bank_details->get_name() );
+				$consumer_iban              = \strval( $consumer_bank_details->get_iban() );
+			}
+		}
+
 		// Pay again URL.
 		$pay_again_url = \rgar( $entry, 'source_url' );
 
@@ -1304,6 +1296,8 @@ class Extension extends AbstractPluginIntegration {
 			'{knitpay_payment_bank_transfer_recipient_city}' => $bank_transfer_recipient_city,
 			'{knitpay_payment_bank_transfer_recipient_country}' => $bank_transfer_recipient_country,
 			'{knitpay_payment_bank_transfer_recipient_account_number}' => $bank_transfer_recipient_account_number,
+			'{knitpay_payment_consumer_bank_account_name}' => $consumer_bank_account_name,
+			'{knitpay_payment_consumer_iban}'     => $consumer_iban,
 			'{knitpay_subscription_id}'           => $subscription_id,
 			'{knitpay_subscription_payment_id}'   => $subscription_payment_id,
 			'{knitpay_subscription_amount}'       => $subscription_amount,

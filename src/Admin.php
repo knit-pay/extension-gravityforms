@@ -168,13 +168,13 @@ class Admin {
 		];
 
 		$merge_tags[] = [
-			'label' => __( 'Pronamic consumer bank account name', 'pronamic_ideal' ),
-			'tag'   => '{pronamic_payment_consumer_bank_account_name}',
+			'label' => __( 'Knit Pay consumer bank account name', 'pronamic_ideal' ),
+			'tag'   => '{knitpay_payment_consumer_bank_account_name}',
 		];
 
 		$merge_tags[] = [
-			'label' => __( 'Pronamic consumer IBAN', 'pronamic_ideal' ),
-			'tag'   => '{pronamic_payment_consumer_iban}',
+			'label' => __( 'Knit Pay consumer IBAN', 'pronamic_ideal' ),
+			'tag'   => '{knitpay_payment_consumer_iban}',
 		];
 
 		// Subscription.

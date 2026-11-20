@@ -5,7 +5,10 @@ All notable changes to this project will be documented in this file.
 This projects adheres to [Semantic Versioning](http://semver.org/) and [Keep a CHANGELOG](http://keepachangelog.com/).
 
 ## [Unreleased][unreleased]
--
+
+### Fixed
+
+- Made `PaymentAddOn::is_feed_condition_met()` compatible with Gravity Forms 3.1.3.4. The override now accepts the new `$without_payment_status_rule` argument and passes it to the parent method. The argument is optional, so older Gravity Forms versions remain supported.
 
 ## [4.10.1] - 2025-06-19
 
